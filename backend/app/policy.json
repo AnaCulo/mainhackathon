@@ -1,5 +1,5 @@
 {
-  "version": "synthetic-intake-2",
+  "version": "synthetic-intake-3",
   "P1": "PROTECT",
   "P2": "PROTECT",
   "P3": "LOCAL_ONLY",
@@ -62,6 +62,11 @@
     ],
     [
       "other",
+      "second sign-?off|second approv(?:er|al)|four-eyes",
+      "The report mentions an approval given without the required second sign-off."
+    ],
+    [
+      "other",
       "misconduct|workplace concern|policy violation|workplace complaint",
       "The reporter raises a workplace concern for review."
     ]
@@ -76,5 +81,12 @@
     "\\b(?:only|sole|single)\\b.{0,60}\\b(?:shift|technician|driver|operator|employee|supervisor|analyst)\\b",
     "\\b(?:tiny|small|satellite) (?:office|depot|branch)\\b.{0,100}\\b(?:shift|[0-9]{1,2}:[0-9]{2})\\b",
     "\\b(?:night shift|[0-9]{1,2}:[0-9]{2})\\b.{0,100}\\b(?:tiny|small) (?:office|depot|branch)\\b"
+  ],
+  "person_observations": [
+    [
+      "other",
+      "approv\\w*\\b.{0,160}?without (?:the )?required second sign-?off",
+      "{person} allegedly approved a purchase without the required second sign-off."
+    ]
   ]
 }

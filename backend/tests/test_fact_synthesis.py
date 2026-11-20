@@ -367,3 +367,11 @@ def test_existing_block_setting_applies_before_fact_release(monkeypatch, setup, 
 
     monkeypatch.setitem(RULES, "P3", "BLOCK")
     assert submit(FINANCE).status_code == 422 and not setup[1].requests
+
+
+def test_witness_is_not_the_subject_of_the_approval(submit):
+    case = submit(
+        "I asked John Smith why. A manager approved a purchase without the required second sign-off."
+    ).json()
+    assert case["persons"] == ["PERSON_01"]
+    assert "PERSON_01 allegedly approved" not in case["summary"]

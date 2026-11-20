@@ -53,6 +53,7 @@ Period = Literal[
     "december",
 ]
 Kind = Literal[
+    "purchase_without_signoff",
     "obstruction",
     "discrepancy",
     "missing_approval",
@@ -83,6 +84,7 @@ class SafeFact(Strict):
     fact_id: FactID
     kind: Kind
     category: Category
+    subject: Annotated[str, Field(pattern=r"^PERSON_[0-9]{2,}$")] | None = None
     unit: Unit | None = None
     count: int | None = Field(default=None, ge=1, le=10)
     material: Literal["boxes", "pallets", "equipment"] | None = None
@@ -96,6 +98,7 @@ class SafeFact(Strict):
             "discrimination",
             "corruption",
             "fraud",
+            "approval_process",
             "duplicate_invoicing",
             "other",
         ]
@@ -229,8 +232,29 @@ def _read(text):
 
 def _topic_facts(screened, text):
     facts = []
-    for category, _ in screened.observations:
+    for category, sentence in screened.observations:
+        subject = re.fullmatch(
+            r"(PERSON_[0-9]{2,}) allegedly approved a purchase without the required second sign-off\.",
+            sentence,
+        )
+        if subject and subject[1] in screened.mentions:
+            facts.append(
+                SafeFact(
+                    fact_id=f"F{len(facts) + 1:03}",
+                    kind="purchase_without_signoff",
+                    category="other",
+                    subject=subject[1],
+                )
+            )
+            continue
         topic = category
+        if (
+            sentence
+            == "The report mentions an approval given without the required second sign-off."
+        ):
+            if any(f.kind == "purchase_without_signoff" for f in facts):
+                continue
+            topic = "approval_process"
         fraud_cue = (
             r"\b(?:reporting|report) suspected (?:invoice )?fraud\b"
             if screened.mappings

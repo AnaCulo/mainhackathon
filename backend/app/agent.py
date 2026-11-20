@@ -1,4 +1,5 @@
 import json
+import re
 from typing import Annotated
 
 from pydantic import Field
@@ -21,6 +22,18 @@ VOICE_PROMPT = (
     "You assist a workplace reporter. A human will assess the allegations. Return exactly "
     "one question from allowed_questions that best addresses the screened history. No other text or actions."
 )
+
+
+_CASE_TOKEN = re.compile(r"\b(PERSON|REPORTER)_(\d{2})\b")
+_GATEWAY_TOKEN = re.compile(r"<(PERSON|REPORTER)_(\d{1,2})>")
+
+
+def to_gateway(text):
+    return _CASE_TOKEN.sub(lambda m: f"<{m[1]}_{int(m[2])}>", text)
+
+
+def from_gateway(text):
+    return _GATEWAY_TOKEN.sub(lambda m: f"{m[1]}_{int(m[2]):02}", text)
 
 
 class Synthesis(Strict):
@@ -52,6 +65,7 @@ def _noun(fact):
 
 
 TOPICS = {
+    "approval_process": "The report mentions a second sign-off requirement.",
     "duplicate_invoicing": "The report discusses whether invoices were recorded more than once.",
     "invoicing": "The report mentions a concern about invoicing or financial records.",
     "safety": "The report mentions a workplace safety concern.",
@@ -64,6 +78,8 @@ TOPICS = {
 
 
 def render(fact: SafeFact):
+    if fact.kind == "purchase_without_signoff":
+        return f"{fact.subject} allegedly approved a purchase without the required second sign-off."
     if fact.kind == "topic":
         return TOPICS[fact.topic]
     timing = ""
@@ -144,7 +160,7 @@ def messages(system, data):
         {"role": "system", "content": system},
         {
             "role": "user",
-            "content": json.dumps(data, ensure_ascii=True, sort_keys=True),
+            "content": to_gateway(json.dumps(data, ensure_ascii=True, sort_keys=True)),
         },
     ]
 

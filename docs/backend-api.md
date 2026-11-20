@@ -50,7 +50,7 @@ Use `Authorization: Bearer <ELEVENLABS_BRIDGE_KEY>`. Select the custom Chat Comp
 Successful response has Content-Type: text/event-stream and X-Session-Revision. Example SSE frames:
 
 ```text
-data: {"id":"chatcmpl-example","object":"chat.completion.chunk","created":1795186800,"model":"openrouter:openai/gpt-6-luna","choices":[{"index":0,"delta":{"role":"assistant","content":"Approximately when did this happen?"},"finish_reason":null}]}
+data: {"id":"chatcmpl-example","object":"chat.completion.chunk","created":1795186800,"model":"openrouter:openai/gpt-6-luna","choices":[{"index":0,"delta":{"role":"assistant","content":"When did this happen, roughly?"},"finish_reason":null}]}
 
 data: {"id":"chatcmpl-example","object":"chat.completion.chunk","created":1795186800,"model":"openrouter:openai/gpt-6-luna","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
 

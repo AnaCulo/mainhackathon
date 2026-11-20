@@ -83,10 +83,50 @@ def test_model_receives_only_pseudonyms_for_five_mentions(setup, submit):
     requests = [
         b for url, b, _ in setup[1].requests if url.endswith("/chat/completions")
     ]
+    # Gateway form of PERSON_01: BRANE flags the bare case token as a name.
     assert (
         json.loads(requests[0]["messages"][1]["content"])["person_mentions"]
-        == ["PERSON_01"] * 5
+        == ["<PERSON_1>"] * 5
     )
+    assert "PERSON_01" not in json.dumps(requests)
+
+
+def test_gateway_token_round_trip():
+    from app.agent import from_gateway, to_gateway
+
+    assert to_gateway('["PERSON_01","PERSON_12","REPORTER_01"]') == (
+        '["<PERSON_1>","<PERSON_12>","<REPORTER_1>"]'
+    )
+    assert from_gateway(to_gateway("PERSON_03 and REPORTER_01")) == (
+        "PERSON_03 and REPORTER_01"
+    )
+
+
+def test_ordinary_policy_breach_gets_tokenised_cloud_draft(setup, submit):
+    # Matrix P2/P5 row (Ana, 20 Nov): a named person plus an ordinary policy breach may
+    # reach the model once the name is a case-scoped placeholder.
+    text = (
+        "Ivo Laan-Fictief, my team lead, allegedly approved a purchase of 12 laptops "
+        "without the required second sign-off."
+    )
+    r = submit(text)
+    assert r.status_code == 200
+    case = r.json()
+    assert case["persons"] == ["PERSON_01"]
+    assert case["summary"] == (
+        "PERSON_01 allegedly approved a purchase without the required second sign-off."
+    )
+    assert {"policy": "P2", "action": "PROTECT", "count": 1} in case["decisions"]
+    sent = json.dumps([b for _, b, _ in setup[1].requests])
+    assert "Ivo" not in sent and "Laan" not in sent and "<PERSON_1>" in sent
+
+
+def test_criminal_allegation_stays_local_even_when_tokenised(setup, submit):
+    # Same person, potential criminal offence (GDPR Art. 10): P3 holds it locally.
+    text = "Ivo Laan-Fictief, my team lead, allegedly forged receipts for client dinners."
+    r = submit(text)
+    assert r.status_code == 422 and r.json()["error"] == "restricted_material"
+    assert not setup[1].requests
 
 
 def test_contextual_named_witness(submit):

@@ -10,7 +10,9 @@ from .security import Stop
 RULES = json.loads(Path(__file__).with_name("policy.json").read_text())
 QUESTIONS = {
     "what": "What happened?",
-    "when": "Approximately when did this happen?",
+    # BRANE's detector tags "Approximately" as PERSON, which makes every preview
+    # unclean (503 preview_not_clean). Keep question wording free of such false positives.
+    "when": "When did this happen, roughly?",
     "where": "Where did this happen? A general setting is enough.",
     "who": "Who was involved? Roles are enough.",
     "evidence": "What evidence, if any, is available?",
@@ -102,8 +104,11 @@ def screen(
         bind("reporter", [match[1].rstrip(".")])
     name_word = r"[^\W\d_]+(?:[-’'][^\W\d_]+)*"
     full_name = rf"{name_word}(?:\s+(?:de|van|von|der|da|al)){{0,2}}\s+{name_word}"
+    verbs = r"(?:allegedly\s+|has been\s+)?(?:changed|approved|approving|denied|signed|told)"
     subjects = [
-        rf"(?<!\w)({full_name})\s+(?:changed|approved|denied|signed|told)\b",
+        rf"(?<!\w)({full_name})\s+{verbs}\b",
+        # Apposition: "Ivo Laan, my team lead, allegedly approved ..."
+        rf"(?<!\w)({full_name}),\s+(?:my|the|our|a)\s+[^,.;\n]{{1,60}},\s+{verbs}\b",
         rf"\b(?:I witnessed|I saw|I asked|my manager is)\s+({full_name})\b",
     ]
     for pattern in subjects:
@@ -128,6 +133,7 @@ def screen(
     mentions = []
     counts = {"P1": 0, "P2": 0}
     mappings = []
+    original = text
     if bindings:
         pattern = "|".join(
             re.escape(n) for n in sorted(bindings, key=len, reverse=True)
@@ -157,6 +163,25 @@ def screen(
         text.strip(),
         re.IGNORECASE,
     )
+    # Ordinary policy breach linked to exactly one accused person (matrix P2/P5 row):
+    # the token plus a fixed sentence may leave; criminal wording is caught earlier by P3.
+    accused = list(dict.fromkeys(mentions))
+    if len(accused) == 1:
+        for cat, pattern, template in RULES.get("person_observations", []):
+            # Bind this allegation to its subject, not to a witness elsewhere in the report.
+            linked = any(
+                re.fullmatch(
+                    re.escape(name) + r"(?:, (?:my|the|our|a) [\w -]{1,50},)? "
+                    r"(?:allegedly |has been )?(?:approved|approving) (?:a |the )?purchase"
+                    r"(?: of [0-9]{1,3} [\w-]+)? without (?:the )?required second sign-?off[.]?",
+                    original.strip(),
+                    re.IGNORECASE,
+                )
+                for token, name, kind in mappings
+                if kind == "person" and token == accused[0]
+            )
+            if linked and re.search(pattern, text, re.IGNORECASE | re.DOTALL):
+                topics.insert(0, (cat, template.format(person=accused[0])))
     if obstruction:
         place, condition, material = (
             v.lower() if v else None for v in obstruction.groups()
