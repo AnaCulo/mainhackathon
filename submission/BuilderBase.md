@@ -17,7 +17,7 @@ The team’s open-policy baseline exposed failures on protected details, repeate
 - five mentions of one person become one token
 - an ordinary purchasing breach reaches the cloud as PERSON_01, while a forgery allegation stays local
 
-Any failed or unverifiable check returns 503 with zero model or webhook calls. A closed voice harness ran the same path live through the voice bridge contract. Final team review and the manual timing comparison are pending.
+Any failed or unverifiable check returns 503 with zero model or webhook calls. A closed voice harness ran the same path live through the voice bridge contract, and an end-to-end ElevenLabs call with generated caller audio passed through ElevenLabs speech recognition, our backend and live BRANE, then filed a case for the handler. ElevenLabs refuses Custom LLM with zero retention, so the published agent keeps transcripts for at most one day; we record this as a product gap. Final team review and the manual timing comparison are pending.
 
 ## Assets to attach
 
