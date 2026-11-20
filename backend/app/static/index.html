@@ -225,7 +225,11 @@ async function send() {
   const before = spoken ? [["Speech-to-text on this device", "ok", spoken]] : [["Typed on this device", "info", "Sent only to this machine's backend (127.0.0.1)."]];
   if (r.status === 200 && r.question) {
     say(r.question, "agent"); play(r.clip);
-    $("submit").disabled = false;
+    $("submit").disabled = !!r.held_case_id;
+    if (r.held_case_id) {
+      state.held = true; $("send").disabled = true;
+      $("result").replaceChildren(el("p", {}, "Received for local review · " + r.held_case_id));
+    }
     renderTurn(`Message ${state.turn}`, `${r.ms} ms`, r.trace, { before, after: [["Reply to reporter", "ok", "“" + r.question + "”"]] });
   } else {
     const [label, why] = REASONS[r.error] || ["Stopped", r.error || "rejected"];
@@ -239,7 +243,10 @@ async function send() {
 async function submit() {
   $("submit").disabled = true;
   const r = await api("/ui/submit", { session_id: state.session });
-  if (r.status === 200 && r.case) {
+  if (r.case && r.case.hold_reason) {
+    state.held = true; $("send").disabled = true;
+    $("result").replaceChildren(el("p", {}, "Report received and held · " + r.case.case_id));
+  } else if (r.status === 200 && r.case) {
     const c = r.case, b = c.brief || { facts: [c.summary], timeline: [], evidence: [] };
     const dl = el("dl", {},
       el("dt", {}, "Case"), el("dd", {}, c.case_id),

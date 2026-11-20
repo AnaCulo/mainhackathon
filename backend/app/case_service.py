@@ -3,7 +3,7 @@ from functools import partial
 from . import agent
 from .audit import record
 from .fact_extraction import extract_local_facts
-from .models import Brief, Case, Decision
+from .models import HOLD_REASONS, Brief, Case, Decision, HeldCase
 from .n8n_client import deliver
 from .policies import RULES, decision, screen
 from .security import Stop
@@ -21,7 +21,22 @@ def brief_for(extraction):
     return Brief(facts=facts, timeline=timeline, evidence=evidence)
 
 
-async def submit(state, rid, key, text, identities, source, reporter_mode):
+def http_status(case):
+    if isinstance(case, HeldCase):
+        return 202 if case.status == "held_for_review" else HOLD_REASONS[case.hold_reason]
+    return 200
+
+
+def report_response(case):
+    from fastapi.responses import JSONResponse
+
+    if isinstance(case, HeldCase):
+        return JSONResponse({**case.model_dump(), "message": "Received. A person will review your report."},
+                            status_code=http_status(case))
+    return case
+
+
+async def submit(state, rid, key, text, identities, source, reporter_mode, *, voice_turn=None):
     data = {
         "text": text,
         "identities": [e.model_dump() for e in identities],
@@ -34,7 +49,7 @@ async def submit(state, rid, key, text, identities, source, reporter_mode):
     if cached:
         audit("local", "idempotent_replay")
         await deliver(state.db, state.http, state.settings, cid)
-        return Case.model_validate(cached)
+        return (HeldCase if "hold_reason" in cached else Case).model_validate(cached)
     review = None
     try:
         screened = screen(text, identities, allow_incomplete=True)
@@ -76,6 +91,8 @@ async def submit(state, rid, key, text, identities, source, reporter_mode):
             screened.mappings,
         )
     except Stop as exc:
+        if exc.status != 422 and exc.status < 500:
+            raise
         audit(
             "local",
             "BLOCK",
@@ -88,8 +105,14 @@ async def submit(state, rid, key, text, identities, source, reporter_mode):
         private_detail = (
             {"local_fact_provenance": review.provenance} if review else None
         )
-        state.db.hold(cid, rid, exc.reason, private_detail)
-        raise
+        action = "LOCAL_ONLY" if exc.policy == "P3" and RULES["P3"] == "LOCAL_ONLY" else "BLOCK"
+        held = HeldCase(case_id=cid, received_at=received, policy=exc.policy, hold_reason=exc.reason,
+                        status="held_for_review" if exc.status == 422 else "held_unverified",
+                        decisions=[Decision(policy=exc.policy, action=action, count=None), decision("P6")])
+        state.db.hold(held, rid, private_detail, voice_turn)
+        delivery = await deliver(state.db, state.http, state.settings, cid)
+        audit("local", "receipt_delivery", policy=exc.policy, metadata={"state": delivery})
+        return held
     audit("local", "case_created")
     await deliver(state.db, state.http, state.settings, cid)
     return case

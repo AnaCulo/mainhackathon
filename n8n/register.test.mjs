@@ -120,3 +120,23 @@ test('a saved case opens a live decision form and keeps the decision after refre
     assert.deepEqual([record.decision,record.reason,record.approved],['investigate',reason,null]);
   }finally{saved.db.close();}
 });
+
+test('held receipt opens one local review task and starts both clocks', () => {
+  const id = 'WB-' + 'a'.repeat(32);
+  const r = new Register(':memory:', {now: () => Date.parse(received), routes: [id]});
+  const held = {case_id:id, reporter:'REPORTER_01', received_at:received, status:'held_for_review',
+    hold_reason:'restricted_material', policy:'P3', decisions:[
+      {policy:'P3',action:'LOCAL_ONLY',count:null},{policy:'P6',action:'HUMAN_ONLY',count:null}]};
+  assert.throws(() => r.accept({...held,summary:'Forbidden field'}, id));
+  assert.throws(() => r.accept({...held,hold_reason:'free text'}, id));
+  assert.equal(r.accept(held,id),201);
+  const task = r.get(id).task;
+  r.tick();
+  assert.equal(r.accept(held,id),200);
+  assert.equal(r.get(id).task,task);
+  const dates = JSON.parse(r.get(id).clocks);
+  assert.deepEqual([dates.ackDue,dates.feedbackDue],['2026-11-27','2027-02-20']);
+  assert.equal(r.effects(id).find(e=>e.kind==='ack').state,'sent');
+  assert.match(r.db.prepare("SELECT message FROM inbox WHERE kind='notify'").get().message,/Review original/);
+  r.db.close();
+});

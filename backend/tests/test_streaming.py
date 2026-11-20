@@ -87,10 +87,12 @@ def test_held_turn_disables_finalization(setup):
     sid = uuid4()
     url = "/v1/chat/completions"
     assert client.post(url, json=body(sid, CONTROL), headers=VOICE).status_code == 200
+    calls = len(double.gateway_requests)
     held = client.post(
         url, json=body(sid, CONTROL, "My diagnosis is private."), headers=VOICE
     )
-    assert held.status_code == 422
+    assert held.status_code == 200 and "You can end the call now." in held.text
+    assert len(double.gateway_requests) == calls
     status = client.get(f"/voice/sessions/{sid}", headers=VOICE).json()
     assert status["state"] == "held_for_review"
     final = client.post(
@@ -98,7 +100,8 @@ def test_held_turn_disables_finalization(setup):
         json={"confirmed": True, "revision": status["revision"]},
         headers=VOICE,
     )
-    assert final.status_code == 409 and double.deliveries == []
+    assert final.status_code == 409 and double.single_held_delivery
+    assert status["case_id"] == double.deliveries[0]["case_id"]
 
 
 @pytest.mark.asyncio

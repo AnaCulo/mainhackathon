@@ -41,6 +41,9 @@ class Database:
                 attempts INTEGER DEFAULT 0, updated_at TEXT);
             CREATE TABLE IF NOT EXISTS database_identity (singleton INTEGER PRIMARY KEY, marker BLOB);
             """)
+            con.execute("BEGIN IMMEDIATE")
+            if "receipt" not in {r["name"] for r in con.execute("PRAGMA table_info(cases)")}:
+                con.execute("ALTER TABLE cases ADD COLUMN receipt TEXT")
             con.execute(
                 "INSERT OR IGNORE INTO database_identity VALUES(1,?)",
                 (self.seal("intake"),),
@@ -81,11 +84,11 @@ class Database:
             if row:
                 if row["fingerprint"] != fingerprint:
                     raise Stop(409, "idempotency_conflict")
-                if row["payload"]:
+                if row["payload"] or row["receipt"]:
                     return (
                         row["case_id"],
                         row["received_at"],
-                        json.loads(row["payload"]),
+                        json.loads(row["payload"] or row["receipt"]),
                     )
                 if row["owner"] and row["lease"] > time.time():
                     raise Stop(409, "request_in_progress")
@@ -111,19 +114,27 @@ class Database:
             )
             return cid, received, None
 
-    def hold(self, cid, owner, reason, private_detail=None):
+    def hold(self, receipt, owner, private_detail=None, voice_turn=None):
         with self.connection() as con:
-            con.execute(
-                """UPDATE cases SET owner=NULL,status='held_for_review',brane_status=?,
-                updated_at=?,extraction=? WHERE case_id=? AND owner=?""",
-                (
-                    reason,
-                    now(),
-                    self.seal(private_detail) if private_detail else None,
-                    cid,
-                    owner,
-                ),
-            )
+            changed = con.execute(
+                """UPDATE cases SET owner=NULL,status=?,brane_status=?,updated_at=?,
+                extraction=?,receipt=? WHERE case_id=? AND owner=?""",
+                (receipt.status, receipt.hold_reason, now(),
+                 self.seal(private_detail) if private_detail else None,
+                 receipt.model_dump_json(), receipt.case_id, owner),
+            ).rowcount
+            if not changed:
+                raise Stop(409, "lease_expired")
+            if voice_turn:
+                sid, revision, turns, asked = voice_turn
+                self._save_turn(con, sid, revision, turns, asked, 2)
+                con.execute("UPDATE sessions SET case_id=? WHERE id=?", (receipt.case_id, sid))
+            con.execute("INSERT INTO outbox(case_id,state,updated_at) VALUES(?, 'pending', ?)",
+                        (receipt.case_id, now()))
+            con.execute("""INSERT INTO audit_events
+                (request_id,case_id,timestamp,source,policy_id,action,success,metadata)
+                VALUES(?,?,?,'local',?,'held_registered',1,'{}')""",
+                        (owner, receipt.case_id, now(), receipt.policy))
 
     def finish(self, case, owner, extraction, mappings):
         with self.connection() as con:
@@ -171,21 +182,24 @@ class Database:
 
     def save_turn(self, sid, old_revision, turns, asked, *, frozen=0):
         with self.connection() as con:
-            saved = con.execute(
-                """INSERT INTO sessions(id,revision,turns,asked,frozen) VALUES(?,?,?,?,?)
-                ON CONFLICT(id) DO UPDATE SET turns=excluded.turns,revision=excluded.revision,
-                asked=excluded.asked,frozen=excluded.frozen WHERE sessions.revision=? AND sessions.frozen=0""",
-                (
-                    sid,
-                    old_revision + 1,
-                    self.seal(turns),
-                    json.dumps(asked),
-                    frozen,
-                    old_revision,
-                ),
-            ).rowcount
-            if not saved:
-                raise Stop(409, "stale_history")
+            self._save_turn(con, sid, old_revision, turns, asked, frozen)
+
+    def _save_turn(self, con, sid, old_revision, turns, asked, frozen):
+        saved = con.execute(
+            """INSERT INTO sessions(id,revision,turns,asked,frozen) VALUES(?,?,?,?,?)
+            ON CONFLICT(id) DO UPDATE SET turns=excluded.turns,revision=excluded.revision,
+            asked=excluded.asked,frozen=excluded.frozen WHERE sessions.revision=? AND sessions.frozen=0""",
+            (
+                sid,
+                old_revision + 1,
+                self.seal(turns),
+                json.dumps(asked),
+                frozen,
+                old_revision,
+            ),
+        ).rowcount
+        if not saved:
+            raise Stop(409, "stale_history")
 
     def freeze(self, sid, revision):
         with self.connection() as con:

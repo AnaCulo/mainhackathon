@@ -1,7 +1,12 @@
+import json
+from pathlib import Path
+
 from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+
+HOLD_REASONS = json.loads(Path(__file__).with_name("hold_reasons.json").read_text())
 
 Text = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=16000)
@@ -57,6 +62,22 @@ class Case(Strict):
     decisions: list[Decision]
     brane_status: Literal["ok"] = "ok"
     brief: Brief | None = None
+
+
+class HeldCase(Strict):
+    case_id: Annotated[str, StringConstraints(pattern=r"^WB-[0-9a-f]{32}$")]
+    reporter: Literal["REPORTER_01"] = "REPORTER_01"
+    status: Literal["held_for_review", "held_unverified"]
+    hold_reason: str
+    policy: Literal["P1", "P2", "P3", "P4", "P5"]
+    received_at: str
+    decisions: list[Decision]
+
+    @model_validator(mode="after")
+    def validate_hold(self):
+        if self.hold_reason not in HOLD_REASONS:
+            raise ValueError("Unknown hold reason")
+        return self
 
 
 class Extraction(Strict):

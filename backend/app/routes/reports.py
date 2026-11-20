@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Request
 
-from ..case_service import submit
+from ..case_service import report_response, submit
 from ..models import Case, DraftQuestions, Report
 from ..policies import screen
 from ..n8n_client import deliver
@@ -25,6 +25,10 @@ async def reports(
     request: Request,
     idempotency_key: Annotated[UUID | None, Header()] = None,
 ):
+    return report_response(await submit_report(body, request, idempotency_key))
+
+
+async def submit_report(body, request, idempotency_key):
     return await submit(
         request.app.state,
         request.state.rid,

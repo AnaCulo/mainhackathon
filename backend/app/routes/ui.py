@@ -113,7 +113,7 @@ async def turn(body: Turn, request: Request):
         except ValueError:
             error = "request_rejected"
     clip = next((k for k, v in QUESTIONS.items() if v == question), None)
-    return {"status": r.status_code, "question": question, "clip": clip, "error": error,
+    return {"held_case_id": r.headers.get("x-held-case"), "status": r.status_code, "question": question, "clip": clip, "error": error,
             "request_id": rid, "ms": round((time.perf_counter() - started) * 1000),
             "trace": trace(request.app.state.db, rid) if rid else []}
 
@@ -128,7 +128,7 @@ async def submit(body: Submit, request: Request):
     async with internal(request) as client:
         r = await client.post(f"/voice/sessions/{sid}/finalize", json={"confirmed": True, "revision": revision})
     rid = r.headers.get("x-request-id")
-    case = r.json() if r.status_code == 200 else None
+    case = r.json() if "case_id" in r.json() else None
     delivery = None
     if case:
         with request.app.state.db.connection() as con:

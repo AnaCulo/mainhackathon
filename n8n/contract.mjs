@@ -1,9 +1,30 @@
+import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 export function reject(status=422) {throw Object.assign(new Error('Request rejected'),{status});}
 const exact=(o,keys)=>o && typeof o==='object' && !Array.isArray(o) && Object.keys(o).every(k=>keys.includes(k));
 const string=s=>typeof s==='string' && s.trim().length>0 && s.length<=16000;
 const arr=(a,fn)=>Array.isArray(a) && a.length<=512 && a.every(fn);
+const holdReasons = JSON.parse(readFileSync(new URL('../backend/app/hold_reasons.json', import.meta.url)));
+function validateHeld(b, key, now) {
+  const keys = ['case_id', 'reporter', 'status', 'hold_reason', 'policy', 'received_at', 'decisions'];
+  if (!exact(b, keys) || Object.keys(b).length !== keys.length ||
+      typeof b.case_id !== 'string' || !/^WB-[0-9a-f]{32}$/.test(b.case_id) || b.case_id !== key ||
+      b.reporter !== 'REPORTER_01' || typeof b.hold_reason !== 'string' || !Object.hasOwn(holdReasons, b.hold_reason) ||
+      typeof b.policy !== 'string' || !/^P[1-5]$/.test(b.policy) || typeof b.received_at !== 'string' ||
+      !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?Z$/.test(b.received_at) ||
+      !Number.isFinite(Date.parse(b.received_at)) || Date.parse(b.received_at) > now + 60000 ||
+      new Date(b.received_at).toISOString().slice(0,19) !== b.received_at.slice(0,19) ||
+      b.status !== (holdReasons[b.hold_reason] === 422 ? 'held_for_review' : 'held_unverified')) reject();
+  if (!Array.isArray(b.decisions) || b.decisions.length !== 2 ||
+      !b.decisions.every(d => exact(d, ['policy','action','count']) && d.count === null)) reject();
+  const [hold,human] = b.decisions;
+  if (hold.policy !== b.policy || !(hold.action === 'BLOCK' || (hold.policy === 'P3' && hold.action === 'LOCAL_ONLY')) ||
+      human.policy !== 'P6' || human.action !== 'HUMAN_ONLY') reject();
+  return {id:b.case_id, received:b.received_at, status:b.status, hold_reason:b.hold_reason, policy:b.policy,
+    decisions:b.decisions.map(({policy,action,count})=>({policy,action,count}))};
+}
 export function validate(b,key,now) {
+  if (b && Object.hasOwn(b,'status')) return validateHeld(b,key,now);
   if (!exact(b,['case_id','reporter','category','summary','persons','received_at','decisions','brane_status','acknowledgement','brief']) ||
       typeof b.case_id!=='string' || !/^[A-Za-z0-9_.:-]{1,128}$/.test(b.case_id) || b.case_id!==key ||
       b.brane_status!=='ok' || b.reporter!=='REPORTER_01' || !['fraud','harassment','safety','corruption','discrimination','other'].includes(b.category) ||

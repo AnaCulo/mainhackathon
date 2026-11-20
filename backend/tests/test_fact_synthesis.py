@@ -123,8 +123,8 @@ def test_safety_detail(setup, submit):
 )
 def test_restricted_whole_report(setup, submit, text, policy):
     _, double, db = setup
-    assert submit(text).status_code == 422
-    assert not double.requests
+    assert submit(text).status_code == 202
+    assert not double.gateway_requests
     with db.connection() as con:
         row = con.execute("SELECT status,evidence FROM cases").fetchone()
         assert (
@@ -165,7 +165,7 @@ def test_model_cannot_add_or_infer_values(setup, submit, change):
         }
     )
     r = submit(FINANCE)
-    assert r.status_code == 502 and not double.deliveries
+    assert r.status_code == 502 and double.single_held_delivery
     with db.connection() as con:
         assert con.execute(
             "SELECT count(*) FROM audit_events WHERE action='BLOCK' AND success=0"
@@ -190,7 +190,8 @@ def test_temporal_precision_and_missing_evidence(setup, submit):
             "date": "2026-10-12",
         }
     )
-    assert submit(report).status_code == 502 and len(double.deliveries) == 1
+    assert submit(report).status_code == 502 and len(double.deliveries) == 2
+    assert double.deliveries[-1]['status'] == 'held_unverified'
 
 
 def test_combination_downgrades_mixed_context(setup, submit):
@@ -217,8 +218,8 @@ def test_combination_downgrades_mixed_context(setup, submit):
     ],
 )
 def test_uncertain_assertions_are_never_promoted(setup, submit, text):
-    assert submit(text).status_code == 422
-    assert not setup[1].requests
+    assert submit(text).status_code == 202
+    assert not setup[1].gateway_requests
 
 
 def test_explicit_sequence(setup, submit):
@@ -249,7 +250,7 @@ def test_rich_flow_keeps_preflight_and_header_checks(
 ):
     _, double, _ = setup
     double.fault = fault
-    assert submit(SAFETY).status_code == 503 and not double.deliveries
+    assert submit(SAFETY).status_code == 503 and double.single_held_delivery
     assert sum(url.endswith("/chat/completions") for url, _, _ in double.requests) == (
         0 if before_model else 1
     )
@@ -259,7 +260,7 @@ def test_voice_holds_person_linked_crime(setup):
     client, double, _ = setup
     sid = uuid4()
     r = client.post("/v1/chat/completions", json=body(sid, OFFENCE), headers=VOICE)
-    assert r.status_code == 422 and not double.requests
+    assert r.status_code == 200 and not double.gateway_requests
     assert (
         client.get(f"/voice/sessions/{sid}", headers=VOICE).json()["state"]
         == "held_for_review"
@@ -293,7 +294,7 @@ def test_coarse_location_omitted_from_combination(setup, submit):
 @pytest.mark.parametrize("fault", ["preview", "headers"])
 def test_confidential_provenance_survives_gateway_failure(setup, submit, fault):
     setup[1].fault = fault
-    assert submit(FINANCE).status_code == 503 and not setup[1].deliveries
+    assert submit(FINANCE).status_code == 503 and setup[1].single_held_delivery
     detail, _ = private(setup[2])
     assert any(r["method"] == "amount" for r in detail["local_fact_provenance"])
 
@@ -302,7 +303,7 @@ def test_reject_duplicate_json_fields(setup, submit):
     setup[
         1
     ].answer = '{"category":"fraud","category":"safety","selected_fact_ids":["F001"],"follow_up_question_ids":["who"]}'
-    assert submit(SAFETY).status_code == 502 and not setup[1].deliveries
+    assert submit(SAFETY).status_code == 502 and setup[1].single_held_delivery
 
 
 def test_team_control_keeps_the_independent_process_question(setup, submit):
@@ -363,7 +364,7 @@ def test_existing_block_setting_applies_before_fact_release(monkeypatch, setup, 
     from app.policies import RULES
 
     monkeypatch.setitem(RULES, "P3", "BLOCK")
-    assert submit(FINANCE).status_code == 422 and not setup[1].requests
+    assert submit(FINANCE).status_code == 202 and not setup[1].gateway_requests
 
 
 def test_witness_is_not_the_subject_of_the_approval(submit):

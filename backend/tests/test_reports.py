@@ -68,10 +68,10 @@ def test_grounded_summary(setup, submit):
     data = screen(CONTROL, []).fields
     double.answer = json.dumps({**data, "summary": "Only the night manager knows."})
     assert submit(CONTROL).status_code == 502
-    assert not double.deliveries
+    assert double.single_held_delivery
     with db.connection() as con:
         assert (
-            con.execute("SELECT status FROM cases").fetchone()[0] == "held_for_review"
+            con.execute("SELECT status FROM cases").fetchone()[0] == "held_unverified"
         )
 
 
@@ -85,7 +85,8 @@ def test_in_flight_reservation(setup):
     cid, received, _ = db.reserve(key, {"text": CONTROL}, "first")
     with pytest.raises(Stop, match="request_in_progress"):
         db.reserve(key, {"text": CONTROL}, "second")
-    db.hold(cid, "first", "gateway_unverifiable")
+    with db.connection() as con:
+        con.execute("UPDATE cases SET lease=0 WHERE case_id=?", (cid,))
     assert db.reserve(key, {"text": CONTROL}, "second") == (cid, received, None)
 
 
@@ -103,8 +104,8 @@ def test_model_can_prioritize_multiple_grounded_observations(setup, submit):
 
 def test_unknown_narrative_held_before_egress(setup, submit):
     r = submit("The person from the tiny satellite office knows more.")
-    assert r.status_code == 422 and r.json()["error"] == "local_review_required"
-    assert not setup[1].requests
+    assert r.status_code == 202 and r.json()["hold_reason"] == "local_review_required"
+    assert not setup[1].gateway_requests
 
 
 def test_invoice_discrepancy_brief_has_fact_timeline_evidence(submit):
@@ -150,8 +151,8 @@ def test_policy_description_alone_does_not_assert_a_breach(submit):
 
 def test_job_title_alone_cannot_establish_a_safety_concern(setup, submit):
     response = submit("I drive a forklift. Some pallets went missing.")
-    assert response.status_code == 422
-    assert setup[1].requests == []
+    assert response.status_code == 202
+    assert setup[1].gateway_requests == []
 
 
 def test_procurement_report_preserves_attribution_and_omits_identifying_context(setup, submit):

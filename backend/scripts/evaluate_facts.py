@@ -112,11 +112,11 @@ def run_snapshot(root):
             app = create_app(d.settings, httpx.MockTransport(d))
             with TestClient(app) as client:
                 r = client.post("/reports", json={"text": ex.text}, headers=AUTH)
-                if r.status_code not in {200, 422}:
+                if r.status_code not in {200, 202}:
                     raise ValueError(f"Unexpected HTTP status {r.status_code}")
                 case = r.json()
                 missing = []
-                if r.is_success:
+                if r.status_code == 200:
                     with app.state.db.connection() as con:
                         row = con.execute("SELECT extraction FROM cases").fetchone()
                         missing = app.state.db.unseal(row[0])["missing"]
@@ -126,8 +126,8 @@ def run_snapshot(root):
                     {
                         "summary": case.get("summary"),
                         "missing": missing,
-                        "error": case.get("error"),
-                        "calls": len(d.requests),
+                        "error": case.get("hold_reason"),
+                        "calls": len(d.gateway_requests),
                         "leaked": any(x.casefold() in wire for x in ex.forbidden),
                     }
                 )

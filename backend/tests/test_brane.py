@@ -14,7 +14,7 @@ from .doubles import CONTROL, Double
         ("timeout", 503, False),
         ("drift", 503, False),
         ("model_missing", 503, False),
-        ("refusal", 422, False),
+        ("refusal", 202, False),
         ("preview", 503, False),
         ("headers", 503, True),
     ],
@@ -28,7 +28,7 @@ def test_fail_closed(setup, submit, fault, status, attempt):
         bool([u for u, _, _ in double.requests if u.endswith("chat/completions")])
         == attempt
     )
-    assert not double.deliveries
+    assert double.single_held_delivery
     with db.connection() as con:
         assert con.execute(
             "SELECT count(*) FROM audit_events WHERE policy_id='P5' AND success=0"
@@ -73,6 +73,6 @@ def test_combined_preview_stops_before_completion(setup, submit, fault):
     _, double, _ = setup
     double.fault = fault
     r = submit("A warehouse emergency exit was blocked with boxes.")
-    assert r.status_code == 503 and r.json()["error"] == "preview_not_clean"
+    assert r.status_code == 503 and r.json()["hold_reason"] == "preview_not_clean"
     assert not [u for u, _, _ in double.requests if u.endswith("/chat/completions")]
-    assert not double.deliveries
+    assert double.single_held_delivery

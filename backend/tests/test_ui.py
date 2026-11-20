@@ -61,7 +61,7 @@ def test_held_turn_shows_reason_and_sends_nothing(local):
     client, double = local
     sid = str(uuid4())
     r = client.post("/ui/turn", json={"session_id": sid, "history": ["My medication was discussed at a safety inspection."]}).json()
-    assert r["status"] == 422 and r["error"] == "restricted_material"
+    assert r["status"] == 200 and r["held_case_id"] == double.deliveries[0]["case_id"]
     assert not [u for u, _, _ in double.requests if u.endswith("/chat/completions")]
 
 

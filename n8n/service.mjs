@@ -36,8 +36,12 @@ export function service(r,{wire,secret,password,sendTable,intakePort,reviewOnly=
     const data=JSON.parse(c.payload),d=JSON.parse(c.clocks);
     const items=a=>a.length?a.map(x=>'<li>'+esc(x)+'</li>').join(''):'<li>None supplied</li>';
     const effects=r.effects(c.id).map(e=>'<tr><td>'+esc(e.kind)+'</td><td>'+esc(e.state)+'</td><td>'+esc(e.channel)+'</td><td>'+esc(e.updated)+'</td></tr>').join('');
-    return page(c.id,`<p>Assigned to ${esc(c.actor)} · Received ${esc(data.received)}</p><section><h2>Unverified report · ${esc(data.category)}</h2>
-      <b>Reported facts</b><ul>${items(data.brief.facts)}</ul><b>Timeline</b><ul>${items(data.brief.timeline)}</ul><b>Evidence</b><ul>${items(data.brief.evidence)}</ul></section>
+    const details = data.hold_reason
+      ? `<section><h2>Held for local review: ${esc(data.hold_reason)} (${esc(data.policy)})</h2>
+         <a href="http://127.0.0.1:${Number(intakePort || 8000)}/demo/held/${encodeURIComponent(c.id)}">Review original on the intake host</a></section>`
+      : `<section><h2>Unverified report · ${esc(data.category)}</h2>
+      <b>Reported facts</b><ul>${items(data.brief.facts)}</ul><b>Timeline</b><ul>${items(data.brief.timeline)}</ul><b>Evidence</b><ul>${items(data.brief.evidence)}</ul></section>`;
+    return page(c.id,`<p>Assigned to ${esc(c.actor)} · Received ${esc(data.received)}</p>${details}
       <section><h2>Deadlines · Europe/Amsterdam</h2><p>Acknowledgement due ${d.ackDue} · send by ${d.ackTarget} · missed ${d.ackMissed}<br>Feedback due ${d.feedbackDue} · send by ${d.feedbackTarget} · missed ${d.feedbackMissed}</p>
       ${d.calendarReview?'<p>Verify the operational holiday calendar for this year.</p>':''}
       ${c.demo?'<p>Demo reminders only · acknowledgement +1 min, feedback +2 min from '+esc(c.accepted)+'</p>':''}</section>

@@ -47,3 +47,14 @@ The challenge brief describes enforcement behavior. The following two operations
 2. The local chat operation receives OpenAI-compatible Chat Completions requests with a server-selected model. BRANE must enforce the approved policy profile on every request and route only to the approved OpenAI model. Disable raw input logging and identity restoration in model responses. The backend only accepts structured selections and constructs user-visible content from protected source sentences and fixed prompts.
 
 Both configured BRANE URLs must use a numeric loopback host. The backend refuses redirects and has no direct OpenAI client. The presenter uses the Python local screener and case-scoped mapping before any hosted preview. Its adapter authenticates with BRANE_API_KEY, confirms the approved OpenAI model via GET /models, checks the reviewed policy and verifies the governed completion before releasing the case.
+
+### Held intake receipts
+
+A policy hold returns HTTP 202. An unverifiable automated check retains its 5xx status.
+Both return a case ID and receipt. The encrypted original remains on the intake host.
+Reusing the idempotency key replays the receipt for either kind and retries a pending
+handoff. A duplicate never restarts automated processing. Older held records without
+receipts acquire one when the same report and key are submitted again.
+The register receives only the case ID, fixed reporter token, receipt time, hold status,
+reason code, policy and two decisions. Its acknowledgement and feedback clocks run from
+receipt under the same rules as an ordinary case. Check the register for actual delivery.

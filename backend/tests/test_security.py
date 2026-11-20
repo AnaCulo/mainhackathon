@@ -39,7 +39,7 @@ def test_model_malformed(setup, submit):
     setup[1].answer = "sensitive@example.invalid"
     r = submit(CONTROL)
     assert r.status_code == 502 and "sensitive@" not in r.text
-    assert not setup[1].deliveries
+    assert setup[1].single_held_delivery
 
 
 def test_bounded_request(setup):

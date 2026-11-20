@@ -83,6 +83,7 @@ export class Register {
     }
     const destination=reporter?'synthetic mailbox '+e.id:c.actor+'@example.invalid';
     let message='Case '+e.id+' · '+this.reviewBase+'/review/'+encodeURIComponent(e.id);
+    if(e.kind==='notify' && JSON.parse(c.payload).hold_reason)message='Review original on the intake host · '+message;
     if(e.kind==='ack')message='Report received. Reference '+e.id;
     if(e.kind==='feedback')message=c.feedback;
     // The synthetic delivery receipt and its outbox transition commit together.

@@ -44,6 +44,16 @@ class Double:
         self.fault = None
         self.answer = None
 
+    @property
+    def gateway_requests(self):
+        return [r for r in self.requests if r[0].startswith(HOSTED + "/")]
+
+    @property
+    def single_held_delivery(self):
+        if len(self.deliveries) != 1:
+            return False
+        return set(self.deliveries[0]) == {"case_id", "reporter", "received_at", "status", "hold_reason", "policy", "decisions"}
+
     def __call__(self, req):
         assert req.url.host in {"brane.ai-z.io", "workflow.invalid"}
         body = json.loads(req.content) if req.content else None

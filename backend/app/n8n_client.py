@@ -4,7 +4,7 @@ from uuid import uuid4
 import httpx
 
 from .audit import now
-from .models import Case
+from .models import Case, HeldCase
 
 
 def wire(case):
@@ -33,9 +33,10 @@ async def deliver(db, http, settings, cid):
             ).fetchone()
             return row["state"] if row else "unknown"
         data = con.execute(
-            "SELECT payload FROM cases WHERE case_id=?", (cid,)
-        ).fetchone()[0]
-    payload = Case.model_validate_json(data)
+            "SELECT payload, receipt FROM cases WHERE case_id=?", (cid,)
+        ).fetchone()
+    payload = (HeldCase.model_validate_json(data['receipt']) if data['receipt']
+               else Case.model_validate_json(data['payload']))
     state = "pending"
     try:
         async with http.stream(

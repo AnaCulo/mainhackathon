@@ -1,5 +1,6 @@
 """Presenter-only loopback UI. Raw form data stays in the intake process."""
 
+import json
 import hashlib
 import hmac
 import os
@@ -13,8 +14,10 @@ from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from .main import create_app
-from .models import Report
-from .routes.reports import reports
+from .case_service import http_status
+from .models import HeldCase, Report
+from .routes.ui import local_only
+from .routes.reports import submit_report
 from .security import Stop
 
 
@@ -73,7 +76,12 @@ def create_demo(settings=None, transport=None):
             return page("Submission failed", f"<p>Invalid form.</p><p>Request {rid}</p>", 422)
         try:
             # Same validated input and handler as POST /reports, including idempotency.
-            case = await reports(body, request, key)
+            case = await submit_report(body, request, key)
+            if isinstance(case, HeldCase):
+                title = ("Report received, held for human review" if http_status(case) == 202 else
+                         "Automated check unavailable. Report received and held")
+                return page(title, f"<p>Case {case.case_id}</p><p>{case.hold_reason} ({case.policy})</p>",
+                            http_status(case))
             with request.app.state.db.connection() as con:
                 delivery = con.execute("SELECT state FROM outbox WHERE case_id=?", (case.case_id,)).fetchone()
             if not delivery or delivery["state"] != "delivered":
@@ -85,5 +93,20 @@ def create_demo(settings=None, transport=None):
         return page("Case ready for human review",
                     f"<p>{escape(case.summary)}</p><p>Request {rid}</p>"
                     f'<a href="{review_origin}/review/{case.case_id}">Review {case.case_id}</a>')
+
+    @app.get("/demo/held/{case_id}", dependencies=[Depends(local_only), Depends(authenticate)])
+    async def held_original(case_id: str):
+        db = app.state.db
+        with db.connection() as con:
+            row = con.execute("SELECT evidence, extraction, receipt FROM cases WHERE case_id=? AND receipt IS NOT NULL",
+                              (case_id,)).fetchone()
+        if not row:
+            raise HTTPException(404)
+        receipt = HeldCase.model_validate_json(row["receipt"])
+        provenance = db.unseal(row["extraction"]).get("local_fact_provenance", []) if row["extraction"] else []
+        return page("Review original on the intake host",
+                    f"<p>{receipt.case_id} · {receipt.hold_reason} ({receipt.policy})</p>"
+                    f"<pre>{escape(db.unseal(row['evidence'])['text'])}</pre>"
+                    f"<h2>Local fact provenance</h2><pre>{escape(json.dumps(provenance, ensure_ascii=False))}</pre>")
 
     return app

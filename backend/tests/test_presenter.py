@@ -50,17 +50,17 @@ def test_presenter_requires_a_governed_completion(presenter):
     before = len(upstream.requests)
     upstream.fault = "timeout"
     failed = post_form(client, "A warehouse emergency exit was blocked with boxes.")
-    assert failed.status_code == 503 and "Submission failed" in failed.text
+    assert failed.status_code == 503 and "Report received and held" in failed.text
     assert "gateway_timeout" in failed.text and case["case_id"] not in failed.text
-    assert [url for url, _, _ in upstream.requests[before:]] == [HOSTED + "/models"]
-    assert upstream.deliveries == [case]
+    assert [url for url, _, _ in upstream.requests[before:] if url.startswith(HOSTED)] == [HOSTED + "/models"]
+    assert upstream.deliveries[1]["status"] == "held_unverified"
 
 
 def test_presenter_blocks_before_hosted_preview(presenter):
     client, upstream, _ = presenter
     result = post_form(client, "The medical evidence mentions two invoices.")
-    assert result.status_code == 422 and "restricted_material" in result.text
-    assert not upstream.requests
+    assert result.status_code == 202 and "restricted_material" in result.text
+    assert not upstream.gateway_requests
 
 
 def test_presenter_does_not_confirm_an_unreceived_case(presenter):

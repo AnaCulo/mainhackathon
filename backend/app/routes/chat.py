@@ -10,10 +10,12 @@ from fastapi.responses import StreamingResponse
 
 from .. import agent
 from ..audit import record
-from ..case_service import submit
+from ..case_service import report_response, submit
 from ..models import Case, Chat, Confirm
 from ..policies import QUESTIONS, RULES, screen
 from ..security import Stop, bridge_auth
+
+HELD_LINE = "Thank you. Your report has been received and a person will review it. You can end the call now."
 
 router = APIRouter(dependencies=[Depends(bridge_auth)])
 
@@ -58,7 +60,9 @@ async def chat(body: Chat, request: Request):
                 screened = screen("\n".join(turns), [], allow_incomplete=True)
             except Stop as exc:
                 if exc.policy in {"P1", "P2", "P3", "P4"}:
-                    s.db.save_turn(sid, rev, turns, asked, frozen=2)
+                    held = await submit(s, rid, "voice:" + sid, "\n".join(turns), [], "voice", "anonymous",
+                                        voice_turn=(sid, rev, turns, asked))
+                    return stream_answer(request, body, rid, rev + 1, HELD_LINE, audit, held.case_id)
                 raise
             for d in screened.decisions:
                 audit("local", d.action, policy=d.policy, count=d.count)
@@ -102,6 +106,10 @@ async def chat(body: Chat, request: Request):
         )
         raise
 
+    return stream_answer(request, body, rid, rev, answer, audit)
+
+
+def stream_answer(request, body, rid, rev, answer, audit, case_id=None):
     async def events():
         base = {
             "id": "chatcmpl-" + rid,
@@ -137,6 +145,7 @@ async def chat(body: Chat, request: Request):
         media_type="text/event-stream",
         headers={
             "X-Session-Revision": str(rev),
+            **({"X-Held-Case": case_id} if case_id else {}),
             "Cache-Control": "no-store",
             "X-Accel-Buffering": "no",
         },
@@ -161,7 +170,7 @@ async def finalize(session_id: UUID, body: Confirm, request: Request):
     )
     with s.db.connection() as con:
         con.execute("UPDATE sessions SET case_id=? WHERE id=?", (case.case_id, sid))
-    return case
+    return report_response(case)
 
 
 @router.get("/voice/sessions/{session_id}")
@@ -169,7 +178,10 @@ async def session_status(session_id: UUID, request: Request):
     _, rev, frozen, _ = request.app.state.db.session(str(session_id))
     if not rev:
         raise Stop(404, "unknown_session")
+    with request.app.state.db.connection() as con:
+        case_id = con.execute("SELECT case_id FROM sessions WHERE id=?", (str(session_id),)).fetchone()[0]
     return {
+        **({"case_id": case_id} if case_id else {}),
         "revision": rev,
         "state": ["open", "finalizing_or_submitted", "held_for_review"][frozen],
     }
