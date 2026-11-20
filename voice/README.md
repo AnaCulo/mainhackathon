@@ -6,13 +6,39 @@
 - **Version A**, recorded voice, is only demonstrated in a **closed test harness**. That means fully generated fictional caller audio, fabricated session details, and the custom-LLM route through BRANE.
 - If any part of the voice path can't be verified, demonstrate the text route only.
 
+## ElevenLabs agent repair (20 Nov, 19:45)
+
+After the API key secret was added in the dashboard, the agent's draft had `custom_llm.url: null`. The LLM panel then crashed (`null.matchAll`) and publishing showed "Server URL is invalid".
+
+How it was fixed:
+1. [`elevenlabs_fix_llm.py`](elevenlabs_fix_llm.py) wrote the complete intended config as a **server-side draft** (`POST /v1/convai/agents/{id}/drafts`; never published). The person running it supplies their own `ELEVENLABS_API_KEY` in their shell.
+2. The dashboard keeps its own draft in browser localStorage (`xi:convai-agent-draft-<agent>-branch-<branch>`), and that copy still had the empty URL. Removing that one cache entry made the dashboard load the server draft.
+
+Verified in the dashboard afterwards:
+- the LLM panel opens
+- Server URL is the tunnel, model `openrouter:openai/gpt-6-luna`, secret `hotline_llm_key`
+- backup LLMs disabled
+- Zero Retention on, Store Call Audio off, Text only off, file attachments off
+- the only client override is Custom LLM extra body
+- the publish button no longer shows an error
+
+The agent is still **unpublished**.
+
+**Quick tunnels expire.** The first one returned "Tunnel not found" after about 40 minutes. After restarting cloudflared, update the URL with:
+
+```bash
+python3 voice/elevenlabs_fix_llm.py fix https://<new>.trycloudflare.com/v1 hotline_llm_key
+```
+
+Then clear that localStorage entry again if the dashboard still shows the old URL.
+
 ## Status (20 Nov, 17:48)
 
 | Part | State |
 |---|---|
 | Voice path behind ElevenLabs: backend `/v1/chat/completions` (SSE) → live BRANE → model → bridge confirmation → n8n | **Works live.** Run `n8n/demo.sh --voice` to use [`harness.py`](harness.py). Scripted fictional transcript turns stand in for speech-to-text. A 4-turn safety call took 3–4 s per turn, got one fixed question per turn, was finalised by the bridge, and reached the n8n handler (timeline "yesterday", evidence "photo"). A health-data call was held on turn 1 (`restricted_material`, session `held_for_review`). Evidence: `evidence/voice_harness_*.json` |
 | Version B entry clip | **Done:** [`version_b_disclosure.m4a`](version_b_disclosure.m4a), 18 s. Generated with macOS `say` from the exact wording in `docs/voice-disclosure.md`. No audio or text left the machine. Re-generate it with an ElevenLabs stock voice if you prefer that sound |
-| ElevenLabs agent (job 3) | **Needs a team member with ElevenLabs credits.** Create the agent from `agent_config.json`, set Custom LLM → backend tunnel `/v1/chat/completions` with the `ELEVENLABS_BRIDGE_KEY` secret, and pass `elevenlabs_extra_body.session_id`. The backend side of this contract is what `harness.py` exercises |
+| ElevenLabs agent (job 3) | **Created 20 Nov as an unpublished draft:** `[Culo] Whistleblower intake (synthetic)`, agent ID `agent_5001m7wyb7nbf1x8c7aan33vct1m`. Settings:<ul><li>System prompt and first message: Version A, verbatim</li><li>LLM: Custom LLM, model ID `openrouter:openai/gpt-6-luna`</li><li>Backup LLMs: **disabled**. The default would fall back to ElevenLabs' own models, which breaks P5</li><li>**Zero Retention Mode on**, Store Call Audio off</li></ul>Also set:<ul><li>Allow file attachments: off (the backend accepts no uploads)</li><li>Only one client override allowed, **Custom LLM extra body** (it carries `session_id`). System prompt, LLM and every other override stay locked</li><li>Server URL: a Cloudflare quick tunnel (`cloudflared tunnel --url http://127.0.0.1:8000`, release 2026.10.7, notarised by Cloudflare) pointing at `https://<random>.trycloudflare.com/v1`. Verified through the tunnel: without the key the backend answers 401, with the bridge key a synthetic turn returns its question over SSE via live BRANE</li></ul>The quick-tunnel URL changes every time cloudflared restarts, so update the server URL after a restart. Still open: the API key secret (a team member pastes `ELEVENLABS_BRIDGE_KEY` under Custom LLM → API Key → Add new secret) and, before any public use, **Enable authentication** (Security tab). The dashboard's own test call sends no `elevenlabs_extra_body.session_id`, so the backend rejects it. Use the SDK or a client that sets `customLlmExtraBody`, and generated audio only, never a live microphone. Original instructions: Create the agent from `agent_config.json`, set Custom LLM → backend tunnel `/v1/chat/completions` with the `ELEVENLABS_BRIDGE_KEY` secret, and pass `elevenlabs_extra_body.session_id`. The backend side of this contract is what `harness.py` exercises |
 
 Fixes the live voice run needed:
 - BRANE's prompt guard flags the voice system prompt when it's scanned alone. System prompts are now previewed only inside the combined check.
