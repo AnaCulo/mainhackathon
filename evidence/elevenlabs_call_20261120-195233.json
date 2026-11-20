@@ -1,0 +1,27 @@
+{
+  "note": "Generated caller audio (macOS say), synthetic report. ElevenLabs STT/TTS, backend + live BRANE.",
+  "agent_id": "agent_5001m7wyb7nbf1x8c7aan33vct1m",
+  "conversation_id": "conv_4501m7x4srfzesg8errwnx06ypck",
+  "session_id": "72da2312-7e59-4d45-bdb9-f1ec7f625ade",
+  "caller_lines_spoken": [
+    "Start recorded voice.",
+    "A warehouse emergency exit was blocked with boxes.",
+    "It happened yesterday, in the warehouse.",
+    "I have a photo of it."
+  ],
+  "events": [
+    {
+      "agent": "Hello! How can I help you today?"
+    },
+    {
+      "error": "no agent response within 45 s"
+    }
+  ],
+  "bridge_finalize": {
+    "session_status": 404,
+    "detail": {
+      "error": "unknown_session",
+      "request_id": "bdb9f836-f195-4491-8534-0f6aeda3e51d"
+    }
+  }
+}

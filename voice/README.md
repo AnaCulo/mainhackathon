@@ -6,6 +6,33 @@
 - **Version A**, recorded voice, is only demonstrated in a **closed test harness**. That means fully generated fictional caller audio, fabricated session details, and the custom-LLM route through BRANE.
 - If any part of the voice path can't be verified, demonstrate the text route only.
 
+## End-to-end ElevenLabs call (20 Nov, 20:05)
+
+`voice/elevenlabs_call.py` ran a full call with **generated** caller audio: macOS `say`, fictional lines, no microphone. Evidence: `evidence/elevenlabs_call_20261120-200549.json`, plus the agent's speech in `…_agent.wav`.
+
+The path: ElevenLabs speech-to-text → Custom LLM → tunnel → backend → live BRANE → model → the backend's fixed question → ElevenLabs text-to-speech. Then the trusted-bridge confirmation filed the case.
+
+| Caller (ElevenLabs transcript) | Agent (backend question) |
+|---|---|
+| Start recorded voice. | What happened? |
+| A warehouse emergency exit was blocked with boxes. | What evidence, if any, is available? |
+| It happened yesterday in the warehouse. | Who was involved? Roles are enough. |
+| I have a photo of it. | Would you like to submit this report for human review? |
+
+Bridge finalize returned HTTP 200 and case `WB-6b3c…`. Brief:
+- fact: emergency exit
+- timeline: yesterday
+- evidence: photo (original held locally)
+
+Backend audit for every turn: BRANE preview clean (each message and combined), completion `Routed-To: cloud`, `Action: allow`, `Redacted: false`, approved model, reply validated, then P6 `HUMAN_ONLY`. The backend had no webhook configured, so the case is stored and its n8n delivery is pending. Run `n8n/demo.sh` for that leg.
+
+Fixes this needed:
+- **Publishing:** ElevenLabs refuses **Custom LLM with Zero Retention Mode** (HTTP 400 `custom_llm_not_allowed_in_zrm`). The published version therefore uses the strictest alternative: no stored audio, 1-day retention, then transcript, PII and audio deleted. Authentication is **on** (signed URLs only). **Product gap for the policy matrix:** ElevenLabs holds the transcript for up to a day.
+- **Backend:** ElevenLabs' Custom LLM requests include `max_completion_tokens` and `stream_options`. The backend accepts them as ignored compatibility fields; any other unknown field is still rejected.
+- **Call client:** it streams like a continuous microphone (silence between lines), so ElevenLabs can detect the end of each turn.
+- **Incident:** the first call attempt ran before publishing succeeded and reached ElevenLabs' default agent (DeepSeek, no BRANE). The record is `evidence/elevenlabs_call_20261120-195233.json`. No caller transcript was produced, so no caller text reached that model. The call script now refuses to run unless the published version uses the Custom LLM, the tunnel, disabled backup LLMs and authentication.
+- **Recommendation:** turn off ElevenLabs' **Speculative turn**, which is on by default. It sent two early requests on unfinished transcripts, which the backend checked through BRANE and then discarded as `stale_history`.
+
 ## ElevenLabs agent repair (20 Nov, 19:45)
 
 After the API key secret was added in the dashboard, the agent's draft had `custom_llm.url: null`. The LLM panel then crashed (`null.matchAll`) and publishing showed "Server URL is invalid".

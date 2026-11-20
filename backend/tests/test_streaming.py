@@ -132,3 +132,15 @@ def test_trailing_chunk_after_stop(setup, fault, status):
     double.fault = fault
     r = client.post("/v1/chat/completions", json=body(str(uuid4()), "A warehouse emergency exit was blocked."), headers=VOICE)
     assert r.status_code == status
+
+
+def test_elevenlabs_compatibility_fields_accepted(setup):
+    # Observed live (20 Nov): ElevenLabs' Custom LLM caller adds these two fields.
+    client, double, _ = setup
+    data = body(str(uuid4()), "A warehouse emergency exit was blocked.")
+    data["max_completion_tokens"] = 5000
+    data["stream_options"] = {"include_usage": True}
+    r = client.post("/v1/chat/completions", json=data, headers=VOICE)
+    assert r.status_code == 200 and "[DONE]" in r.text
+    data["surprise"] = 1  # anything else is still rejected
+    assert client.post("/v1/chat/completions", json=data, headers=VOICE).status_code == 422

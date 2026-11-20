@@ -14,7 +14,9 @@ Run it yourself with your own ElevenLabs API key in the environment (never paste
 inspect: committed config summary, every boolean override path, every setting whose name mentions
          "file", and your workspace secrets (name + id only; values are never requested).
 fix:     builds the full draft and saves it with POST .../drafts?branch_id=... . It does not
-         commit a version or publish. Prints the payload it sent, redacted.
+         commit a version or publish.
+publish: commits the same config as a new version on the branch (PATCH ...?branch_id=...),
+         with authentication ON (signed URLs only). Conversations only run committed versions.
 Standard library only.
 """
 import copy
@@ -125,7 +127,7 @@ def set_path(root, dotted, value):
     node[keys[-1]] = value
 
 
-def fix(url, secret_name):
+def build(url, secret_name):
     url = url.rstrip("/")
     if not url.startswith("https://") or url.endswith("/chat/completions"):
         sys.exit("Pass the base URL ending in /v1 (ElevenLabs appends /chat/completions).")
@@ -171,12 +173,23 @@ def fix(url, secret_name):
     # The dashboard's "Allow file attachments" defaults to on; the committed config exposes no
     # boolean for it, so try conversation.file_input.enabled and drop it if the API rejects it.
     set_path(cc, "conversation.file_input.enabled", False)
-    status, body = call("POST", f"{API}/drafts?branch_id={BRANCH}", new)
+    return new
+
+
+def send(method, url_, new, label):
+    status, body = call(method, url_, new)
     if status == 422 and "file_input" in json.dumps(body):
         print("API rejected file_input.enabled; retrying without it (turn attachments off in the dashboard).")
-        cc["conversation"]["file_input"].pop("enabled", None)
-        status, body = call("POST", f"{API}/drafts?branch_id={BRANCH}", new)
-    print(f"POST draft: HTTP {status}")
+        new["conversation_config"]["conversation"]["file_input"].pop("enabled", None)
+        status, body = call(method, url_, new)
+    print(f"{label}: HTTP {status}")
+    return status, body
+
+
+def fix(url, secret_name):
+    new = build(url, secret_name)
+    cc, ps = new["conversation_config"], new["platform_settings"]
+    status, body = send("POST", f"{API}/drafts?branch_id={BRANCH}", new, "POST draft")
     if status != 200:
         print(json.dumps(redact(body), ensure_ascii=False)[:2000])
         sys.exit(1)
@@ -188,11 +201,40 @@ def fix(url, secret_name):
     print("Reload the agent in the dashboard.")
 
 
+def publish(url, secret_name):
+    """Commit the intended config as a new version on the branch, WITH authentication on, so only
+    signed URLs (created with your API key) can start a conversation."""
+    new = build(url, secret_name)
+    set_path(new["platform_settings"], "auth.enable_auth", True)
+    # ElevenLabs refuses Custom LLM with zero retention (HTTP 400 custom_llm_not_allowed_in_zrm,
+    # 20 Nov). Strictest alternative: no stored audio, 1-day retention, then transcript, PII and
+    # audio deleted. Documented as a product gap in the policy matrix.
+    privacy = new["platform_settings"]["privacy"]
+    privacy.update({"zero_retention_mode": False, "record_voice": False, "retention_days": 1,
+                    "delete_transcript_and_pii": True, "delete_audio": True})
+    status, body = send("PATCH", f"{API}?branch_id={BRANCH}", new, "PATCH agent (commit version)")
+    if status != 200:
+        print(json.dumps(redact(body), ensure_ascii=False)[:2000])
+        sys.exit(1)
+    agent = get_agent()
+    pr = agent["conversation_config"]["agent"]["prompt"]
+    ps = agent["platform_settings"]
+    print("Published version now on the branch:")
+    print(f"  llm={pr.get('llm')} url={(pr.get('custom_llm') or {}).get('url')} backup={pr.get('backup_llm_config')}")
+    print(f"  auth.enable_auth={(ps.get('auth') or {}).get('enable_auth')} "
+          f"zero_retention_mode={ps['privacy'].get('zero_retention_mode')} record_voice={ps['privacy'].get('record_voice')}")
+    print(f"  retention_days={ps['privacy'].get('retention_days')} "
+          f"delete_transcript_and_pii={ps['privacy'].get('delete_transcript_and_pii')} "
+          f"delete_audio={ps['privacy'].get('delete_audio')}")
+
+
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "inspect"
     if mode == "inspect":
         inspect()
     elif mode == "fix" and len(sys.argv) == 4:
         fix(sys.argv[2], sys.argv[3])
+    elif mode == "publish" and len(sys.argv) == 4:
+        publish(sys.argv[2], sys.argv[3])
     else:
-        sys.exit("usage: inspect | fix https://<tunnel>.trycloudflare.com/v1 <secret-name>")
+        sys.exit("usage: inspect | fix|publish https://<tunnel>.trycloudflare.com/v1 <secret-name>")
