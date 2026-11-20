@@ -10,7 +10,7 @@ from uuid import uuid4
 from cryptography.fernet import Fernet
 
 from .audit import now
-from .security import Stop
+from .security import Stop, owner_only
 
 
 class Database:
@@ -18,8 +18,10 @@ class Database:
         self.path, self.key = path, key.encode()
         self.box = Fernet(self.key)
         fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o600)
-        os.fchmod(fd, 0o600)
-        os.close(fd)
+        try:
+            owner_only(fd, path)
+        finally:
+            os.close(fd)
         with self.connection() as con:
             con.executescript("""
             CREATE TABLE IF NOT EXISTS cases (

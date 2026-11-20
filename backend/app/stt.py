@@ -15,6 +15,8 @@ import tempfile
 import threading
 import time
 
+from .security import owner_only
+
 MODEL_NAME = os.environ.get("STT_MODEL", "small.en")
 HOTWORDS = ("CEO CFO COO CTO HR team lead supervisor manager controller invoice ledger "
             "purchase order sign-off procurement supplier forklift inspection pallets "
@@ -49,7 +51,7 @@ def transcribe(audio: bytes) -> dict:
     model = _load()
     fd, path = tempfile.mkstemp(suffix=".audio")
     try:
-        os.fchmod(fd, 0o600)
+        owner_only(fd, path)
         with os.fdopen(fd, "wb") as f:
             f.write(audio)
         segments, info = model.transcribe(
