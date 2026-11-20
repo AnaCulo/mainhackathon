@@ -1,0 +1,9 @@
+{
+  "what": "What happened?",
+  "when": "When did this happen, roughly?",
+  "where": "Where did this happen? A general setting is enough.",
+  "who": "Who was involved? Roles are enough.",
+  "evidence": "What evidence, if any, is available?",
+  "confirm": "Would you like to submit this report for human review?",
+  "disclosure": "This is an AI reporting assistant with a computer-generated voice. This is a demonstration: please use only made-up names and events. You can type your report, or hold the talk button. If you talk, your voice is turned into text on this device and the recording is deleted straight away. No audio leaves this device. Names are replaced before anything reaches an AI model. An authorised human case handler reviews your report and decides what happens next. You do not have to give your name. What happened?"
+}

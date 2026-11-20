@@ -11,7 +11,7 @@ from .brane_client import BraneClient
 from .config import Settings
 from .database import Database
 from .request_limit import RequestLimit
-from .routes import chat, reports
+from .routes import chat, reports, ui
 from .security import Stop
 
 
@@ -84,6 +84,7 @@ def create_app(settings=None, transport=None):
 
     app.include_router(reports.router)
     app.include_router(chat.router)
+    app.include_router(ui.router)
     return app
 
 

@@ -123,6 +123,14 @@ class BraneClient:
             route="cloud",
             metadata={"messages_checked": len(messages), "combined_checked": combined_check},
         )
+        # What actually leaves for BRANE: already-protected, closed-vocabulary text only
+        # (caller-derived messages; the server-owned system prompt is a constant).
+        audit(
+            "gateway",
+            "outbound_messages",
+            route="cloud",
+            metadata={"messages": [m["content"] for m in messages if m["role"] != "system"]},
+        )
 
     @staticmethod
     def _verify_headers(h, audit):

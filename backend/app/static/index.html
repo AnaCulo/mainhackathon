@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anonymous Whistleblower Intake Hotline</title>
+<style>
+:root {
+  --bg: #f6f5f2; --panel: #ffffff; --ink: #1d1d1f; --muted: #6b6b70; --line: #e3e1dc;
+  --accent: #2f5d50; --accent-ink: #ffffff; --agent: #eef3f1; --user: #2f5d50; --user-ink: #fff;
+  --ok: #2e7d4f; --warn: #a66300; --stop: #b3261e; --code: #f3f2ee; --chip: #ecebe6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141516; --panel: #1d1f21; --ink: #ececee; --muted: #9a9aa2; --line: #2e3033;
+    --accent: #7fc4ad; --accent-ink: #10201b; --agent: #23302c; --user: #3f7d6b; --user-ink: #fff;
+    --ok: #6fcf97; --warn: #f2b44c; --stop: #ff8a80; --code: #26282b; --chip: #2a2c2f;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+header { padding: 18px 24px; border-bottom: 1px solid var(--line); background: var(--panel);
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+header h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+.badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--chip); color: var(--muted); }
+main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 16px; padding: 16px 24px 32px; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 12px 16px 24px; } header { padding: 14px 16px; } }
+section.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+h2 { font-size: 15px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.notice { background: var(--agent); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+.notice button { margin-top: 8px; }
+.tabs { display: flex; gap: 6px; margin: 14px 0 10px; }
+.tabs button { flex: 1; }
+button { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+button.primary, .tabs button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+#chat { display: flex; flex-direction: column; gap: 8px; min-height: 180px; max-height: 46vh; overflow-y: auto;
+  padding: 8px 2px; }
+.msg { max-width: 85%; padding: 8px 12px; border-radius: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.agent { background: var(--agent); align-self: flex-start; border-bottom-left-radius: 4px; }
+.msg.user { background: var(--user); color: var(--user-ink); align-self: flex-end; border-bottom-right-radius: 4px; }
+.msg .tag { display: block; font-size: 11px; opacity: .8; margin-top: 4px; }
+.msg.held { background: transparent; border: 1px dashed var(--stop); color: var(--stop); align-self: stretch; max-width: 100%; }
+.composer { display: flex; gap: 8px; margin-top: 10px; }
+textarea { flex: 1; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; resize: vertical; min-height: 44px; }
+#talk { width: 100%; padding: 14px; font-weight: 600; user-select: none; touch-action: none; }
+#talk.recording { background: var(--stop); color: #fff; border-color: var(--stop); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+.hint { color: var(--muted); font-size: 13px; }
+#result { margin-top: 12px; }
+.case { border: 1px solid var(--accent); border-radius: 10px; padding: 12px; }
+.case dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 8px 0 0; }
+.case dt { color: var(--muted); }
+.case dd { margin: 0; overflow-wrap: anywhere; }
+#timeline { display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 160px); overflow-y: auto; }
+.turn { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.turn h3 { margin: 0 0 6px; font-size: 14px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.turn h3 span { color: var(--muted); font-weight: 400; }
+.step { display: grid; grid-template-columns: 22px 1fr; gap: 6px; padding: 5px 0; border-top: 1px dashed var(--line); }
+.step:first-of-type { border-top: 0; }
+.dot { width: 10px; height: 10px; border-radius: 50%; margin: 6px 0 0 4px; background: var(--ok); }
+.dot.warn { background: var(--warn); } .dot.stop { background: var(--stop); } .dot.info { background: var(--muted); }
+.step b { font-weight: 600; }
+.step .why { color: var(--muted); font-size: 13px; }
+pre { margin: 6px 0 0; background: var(--code); padding: 8px; border-radius: 6px; font: 12px/1.4 ui-monospace, Menlo, monospace;
+  white-space: pre-wrap; overflow-wrap: anywhere; max-height: 220px; overflow: auto; }
+.kv { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.kv span { font: 12px ui-monospace, Menlo, monospace; background: var(--chip); padding: 1px 6px; border-radius: 4px; }
+.empty { color: var(--muted); }
+a { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Anonymous Whistleblower Intake Hotline</h1>
+  <span class="badge">Synthetic demo · made-up names and events only</span>
+  <span class="badge" id="health">checking backend…</span>
+</header>
+<main>
+  <section class="card" aria-labelledby="rep">
+    <h2 id="rep">Reporter</h2>
+    <div class="notice" id="disclosure">
+      This is an AI reporting assistant. <b>Use only made-up names and events.</b>
+      You can type your report, or hold the talk button. If you talk, your voice is turned into text
+      <b>on this device</b> and the recording is deleted straight away — no audio leaves this device.
+      Names are replaced before anything reaches an AI model. An authorised human case handler reviews
+      your report and decides what happens next. You do not have to give your name.
+      <div><button id="playDisclosure" type="button">▶ Hear this notice</button></div>
+    </div>
+    <div class="tabs" role="group" aria-label="How to report">
+      <button id="modeText" type="button" aria-pressed="true">⌨ Send messages</button>
+      <button id="modeTalk" type="button" aria-pressed="false">🎙 Talk (stays on this device)</button>
+    </div>
+    <div id="chat" aria-live="polite"></div>
+    <div id="talkBox" hidden>
+      <button id="talk" type="button">Hold to talk</button>
+      <div class="hint">Hold the button (or the space bar) while speaking. Your words appear below to check before sending.</div>
+    </div>
+    <div class="composer">
+      <textarea id="input" rows="2" placeholder="Describe what happened — roles are enough, no names needed"></textarea>
+      <button id="send" class="primary" type="button">Send</button>
+    </div>
+    <div class="row">
+      <button id="submit" type="button" disabled>Submit report for human review</button>
+      <button id="reset" type="button">New report</button>
+      <label class="hint"><input type="checkbox" id="speak" checked> Speak replies</label>
+    </div>
+    <div id="result"></div>
+  </section>
+
+  <section class="card" aria-labelledby="bts">
+    <h2 id="bts">Behind the scenes</h2>
+    <div id="timeline"><p class="empty">Each message you send appears here step by step: local screening, what was sent to BRANE, BRANE's decision, the model check, and the case handed to a human.</p></div>
+  </section>
+</main>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const state = { session: null, history: [], turn: 0, mode: "text", held: false };
+const REASONS = {
+  restricted_material: ["Held locally (P3)", "Sensitive data or a criminal-offence allegation was found. Nothing was sent to BRANE or any AI model; the report waits for a human handler."],
+  instruction_quarantined: ["Blocked (P4)", "The text tried to instruct the AI (e.g. reveal identities or change rules). Nothing was sent to any model; the report is kept for human review."],
+  local_review_required: ["Held for human review", "No releasable topic was recognised, so nothing was sent to a model."],
+  identity_withheld: ["Held locally (P1/P2)", "An identity could not be protected safely."],
+  ambiguous_identity: ["Held locally (P2)", "A name could not be resolved unambiguously."],
+  preview_withheld: ["Blocked by BRANE preview (P5)", "BRANE would route this locally or refuse it, so the backend stopped before any model call."],
+  preview_not_clean: ["Blocked: BRANE preview not clean (P5)", "BRANE detected something in the outgoing text, so nothing was sent."],
+  unverified_completion_headers: ["Result rejected (P5)", "BRANE's response headers were not the expected clean route; nothing was released."],
+  gateway_unverifiable: ["Gateway unavailable (P5)", "The protection check could not be verified, so nothing was sent and there is no fallback."],
+  unapproved_tenant_policy: ["BRANE policy changed (P5)", "The live policy does not match the reviewed fingerprint; nothing is sent until it is reviewed."],
+  gateway_refused: ["Refused by BRANE (HTTP 422)", "BRANE refused the request under the team policy."],
+  unsafe_voice_output: ["Model reply rejected", "The model answered outside the allowed questions; nothing was released."],
+};
+const STEPS = {
+  "local:turn_received": ["Received on this machine", "info"],
+  "local:intake_received": ["Received on this machine", "info"],
+  "local:PROTECT": ["Names replaced with case tokens", "ok"],
+  "local:BLOCK": ["Stopped locally", "stop"],
+  "local:LOCAL_ONLY": ["Kept local only (P3)", "stop"],
+  "gateway:policy_verified": ["BRANE team policy verified", "ok"],
+  "gateway:preview_clean": ["BRANE preview: clean", "ok"],
+  "gateway:preview_local": ["BRANE preview: would route locally", "stop"],
+  "gateway:preview_refuse": ["BRANE preview: would refuse", "stop"],
+  "gateway:outbound_messages": ["Sent to BRANE (already protected)", "ok"],
+  "transport:completion_attempted": ["Governed model call via BRANE", "info"],
+  "gateway:ALLOW": ["BRANE decision", "ok"],
+  "gateway:headers_rejected": ["BRANE response rejected", "stop"],
+  "gateway:REFUSE": ["BRANE refused", "stop"],
+  "model:voice_reply_validated": ["Model reply checked against allowed questions", "ok"],
+  "model:schema_and_grounding_validated": ["Model draft checked (schema and grounding)", "ok"],
+  "local:bridge_confirmed_submission": ["Reporter confirmed submission (P6)", "ok"],
+  "local:HUMAN_ONLY": ["Decision reserved for a human (P6)", "ok"],
+  "local:case_created": ["Case created", "ok"],
+  "local:idempotent_replay": ["Same submission replayed", "info"],
+};
+
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) { if (k === "class") n.className = v; else n.setAttribute(k, v); }
+  for (const k of kids) n.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return n;
+}
+function say(text, cls, tag) {
+  const m = el("div", { class: "msg " + cls }, text);
+  if (tag) m.append(el("span", { class: "tag" }, tag));
+  $("chat").append(m); $("chat").scrollTop = $("chat").scrollHeight;
+}
+function play(clip) {
+  if (!$("speak").checked || !clip) return;
+  new Audio("/ui/voice/" + encodeURIComponent(clip)).play().catch(() => {});
+}
+async function api(path, body, raw) {
+  const r = await fetch(path, { method: body === undefined ? "GET" : "POST",
+    headers: raw ? { "Content-Type": "application/octet-stream" } : { "Content-Type": "application/json" },
+    body: body === undefined ? undefined : raw ? body : JSON.stringify(body) });
+  return r.json().then((j) => ({ status: r.status, ...j }));
+}
+
+function renderTurn(title, timing, events, extra) {
+  const box = el("div", { class: "turn" }, el("h3", {}, title, el("span", {}, timing)));
+  const add = (label, cls, why, detail) => {
+    const s = el("div", { class: "step" }, el("div", { class: "dot " + cls }));
+    const body = el("div", {}, el("b", {}, label));
+    if (why) body.append(el("div", { class: "why" }, why));
+    if (detail) body.append(detail);
+    s.append(body); box.append(s);
+  };
+  for (const pre of extra?.before || []) add(...pre);
+  for (const e of events) {
+    const key = e.source + ":" + e.action;
+    const [label, cls] = STEPS[key] || [e.source + " · " + e.action, e.ok ? "info" : "warn"];
+    let why = "", detail = null;
+    if (e.action === "PROTECT") why = `${e.policy}: ${e.count} occurrence(s) replaced; originals stay encrypted on this machine.`;
+    if (e.action === "BLOCK" && e.meta.reason) { const r = REASONS[e.meta.reason]; why = r ? r[1] : e.meta.reason; }
+    if (e.action === "policy_verified") why = "Fingerprint " + String(e.meta.policy_sha256 || "").slice(0, 12) + "… matches the reviewed policy-v2.";
+    if (e.action === "preview_clean") why = `Zero detections in ${e.meta.messages_checked} message(s)` + (e.meta.combined_checked ? " and in the combined conversation." : ".");
+    if (e.action === "outbound_messages") {
+      why = "This is everything the cloud model receives: fixed sentences and tokens, no original wording.";
+      detail = el("pre", {}, (e.meta.messages || []).map((m) => { try { return JSON.stringify(JSON.parse(m), null, 2); } catch { return m; } }).join("\n\n"));
+    }
+    if (e.action === "ALLOW" && e.source === "gateway") {
+      detail = el("div", { class: "kv" }, ...Object.entries(e.meta).filter(([k]) => k.startsWith("X-Brane")).map(([k, v]) => el("span", {}, k.replace("X-Brane-", "") + ": " + v)));
+    }
+    if (e.action === "turn_received" || e.action === "intake_received") why = "Matrix " + (e.meta.matrix_version || "") + ".";
+    add(label, cls, why, detail);
+  }
+  for (const post of extra?.after || []) add(...post);
+  const tl = $("timeline"); if (tl.querySelector(".empty")) tl.innerHTML = "";
+  tl.prepend(box);
+}
+
+async function send() {
+  const text = $("input").value.trim();
+  if (!text || state.held) return;
+  const spoken = $("input").dataset.spoken;
+  state.history.push(text); state.turn += 1;
+  say(text, "user", spoken ? "spoken · transcribed on this device" : "typed");
+  $("input").value = ""; delete $("input").dataset.spoken;
+  $("send").disabled = true;
+  const r = await api("/ui/turn", { session_id: state.session, history: state.history });
+  $("send").disabled = false;
+  const before = spoken ? [["Speech-to-text on this device", "ok", spoken]] : [["Typed on this device", "info", "Sent only to this machine's backend (127.0.0.1)."]];
+  if (r.status === 200 && r.question) {
+    say(r.question, "agent"); play(r.clip);
+    $("submit").disabled = false;
+    renderTurn(`Message ${state.turn}`, `${r.ms} ms`, r.trace, { before, after: [["Reply to reporter", "ok", "“" + r.question + "”"]] });
+  } else {
+    const [label, why] = REASONS[r.error] || ["Stopped", r.error || "rejected"];
+    state.held = ["restricted_material", "instruction_quarantined"].includes(r.error);
+    say(`${label}. ${why}`, "held");
+    renderTurn(`Message ${state.turn}`, `${r.ms ?? "–"} ms`, r.trace || [], { before });
+    if (state.held) { $("submit").disabled = true; $("send").disabled = true; }
+  }
+}
+
+async function submit() {
+  $("submit").disabled = true;
+  const r = await api("/ui/submit", { session_id: state.session });
+  if (r.status === 200 && r.case) {
+    const c = r.case, b = c.brief || { facts: [c.summary], timeline: [], evidence: [] };
+    const dl = el("dl", {},
+      el("dt", {}, "Case"), el("dd", {}, c.case_id),
+      el("dt", {}, "Category"), el("dd", {}, c.category),
+      el("dt", {}, "Facts"), el("dd", {}, b.facts.join(" ")),
+      el("dt", {}, "Timeline"), el("dd", {}, b.timeline.join(" ") || "—"),
+      el("dt", {}, "Evidence"), el("dd", {}, b.evidence.join(" ") || "—"),
+      el("dt", {}, "Persons"), el("dd", {}, c.persons.join(", ") || "none named"),
+      el("dt", {}, "Decision"), el("dd", {}, "pending — an authorised human decides"),
+      el("dt", {}, "Handed to n8n"), el("dd", {}, r.delivery === "delivered" ? "delivered" : (r.delivery || "pending") + " (start n8n with n8n/demo.sh to deliver)"));
+    const box = el("div", { class: "case" }, el("b", {}, "Report submitted for human review"), dl);
+    if (r.delivery === "delivered") box.append(el("div", { class: "row" }, el("a", { href: r.handler_url, target: "_blank", rel: "noopener" }, "Open the handler's review page →")));
+    $("result").replaceChildren(box);
+    say("Thank you. An authorised case handler will review your report.", "agent");
+    renderTurn("Submission", `${r.ms} ms`, r.trace, { after: [["Case handed to the n8n workflow", r.delivery === "delivered" ? "ok" : "warn", r.delivery === "delivered" ? "Delivered with the case ID as idempotency key. Only tokens and protected sentences." : "Waiting: no n8n webhook running."]] });
+  } else {
+    $("result").replaceChildren(el("div", { class: "msg held" }, "Not submitted: " + (r.error || r.detail || r.status)));
+  }
+}
+
+async function reset() {
+  const r = await api("/ui/new-session");
+  Object.assign(state, { session: r.session_id, history: [], turn: 0, held: false });
+  $("chat").replaceChildren(); $("result").replaceChildren(); $("submit").disabled = true; $("send").disabled = false;
+  say("What happened? Roles are enough — you do not need to give names.", "agent");
+}
+
+function setMode(mode) {
+  state.mode = mode;
+  $("modeText").setAttribute("aria-pressed", mode === "text"); $("modeTalk").setAttribute("aria-pressed", mode === "talk");
+  $("talkBox").hidden = mode !== "talk";
+}
+
+let recorder = null, chunks = [];
+async function startTalk() {
+  if (recorder || state.held) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recorder = new MediaRecorder(stream); chunks = [];
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+    recorder.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop());
+      const blob = new Blob(chunks, { type: recorder.mimeType }); recorder = null;
+      $("talk").textContent = "Transcribing on this device…";
+      const r = await api("/ui/stt", await blob.arrayBuffer(), true);
+      $("talk").textContent = "Hold to talk";
+      if (r.text) {
+        $("input").value = r.text;
+        $("input").dataset.spoken = `${r.audio_seconds}s of audio transcribed by ${r.engine} in ${r.ms} ms. Recording deleted: ${r.audio_deleted}. Audio sent off this device: none.`;
+        $("input").focus();
+      }
+    };
+    recorder.start(); $("talk").classList.add("recording"); $("talk").textContent = "Listening… release to stop";
+  } catch (e) { $("talk").textContent = "Microphone unavailable"; }
+}
+function stopTalk() { if (recorder && recorder.state === "recording") { recorder.stop(); $("talk").classList.remove("recording"); } }
+
+$("send").onclick = send;
+$("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+$("submit").onclick = submit;
+$("reset").onclick = reset;
+$("modeText").onclick = () => setMode("text");
+$("modeTalk").onclick = () => setMode("talk");
+$("playDisclosure").onclick = () => new Audio("/ui/voice/disclosure").play().catch(() => {});
+for (const [ev, fn] of [["pointerdown", startTalk], ["pointerup", stopTalk], ["pointerleave", stopTalk]]) $("talk").addEventListener(ev, fn);
+document.addEventListener("keydown", (e) => { if (state.mode === "talk" && e.code === "Space" && document.activeElement !== $("input") && !e.repeat) { e.preventDefault(); startTalk(); } });
+document.addEventListener("keyup", (e) => { if (state.mode === "talk" && e.code === "Space" && document.activeElement !== $("input")) { e.preventDefault(); stopTalk(); } });
+
+fetch("/health").then((r) => r.json()).then((h) => {
+  $("health").textContent = h.brane_configured ? "backend up · BRANE configured" : "backend up · BRANE not configured";
+}).catch(() => { $("health").textContent = "backend unreachable"; });
+reset();
+</script>
+</body>
+</html>
