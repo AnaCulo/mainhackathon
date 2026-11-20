@@ -17,6 +17,23 @@ node --test n8n/register.test.mjs backend/intake.test.mjs
 
 The first command exercises and stops a fresh instance, including all three human choices via scripted form submissions. The second checks boundary cases. To verify the published Python variant separately, use CPython 3.13+ on Windows and install its requirements in a disposable environment and add `-PythonBackend <path-to-3c7dda9/backend> -PythonExecutable <path-to-python>` to the first command.
 
+## macOS / Linux, and the live Python backend
+
+`n8n/demo.sh` does the same as `demo.ps1`. It needs Node 24 (n8n 2.48.7 requires it) and npm on PATH. `--hold` keeps the listeners running.
+
+```bash
+n8n/demo.sh --python --hold
+```
+
+`--python` also starts the Python backend from `backend/` on 127.0.0.1:8000, using `backend/.env` (live BRANE, pinned policy-v2). It points the backend at this instance's webhook (`http://127.0.0.1:5689/webhook/protected-case`, bearer = N8N_TOKEN from the demo config) and runs `n8n/live-python.py`. Set `PYTHON` to an interpreter that has `backend/requirements.txt` installed.
+
+The Python backend accepts plain HTTP only to a numeric loopback host (`127.0.0.1` or `::1`). Every other webhook must use HTTPS.
+
+Verified 20 Nov, macOS, Node 24.22.3:
+- The walkthrough passed.
+- Live cases T1, P3a and T3 went through BRANE into n8n, and the handler review page shows their protected summaries.
+- T5, P3b and T4 were held locally by the backend and never reached n8n.
+
 ## Import into an existing local instance
 
 1. Use a restricted project on self-hosted n8n 2.48.7. Bind to loopback. The HTTP Request nodes target fixed loopback register endpoints. History settings in the export disable manual, successful, failed and progress payload retention. Set the matching instance execution settings as in demo.ps1. Keep telemetry, request-body logging, proxy body logging and pinned data off.
