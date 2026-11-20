@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from uuid import uuid4
@@ -30,7 +31,9 @@ def create_app(settings=None, transport=None):
             transport=transport, trust_env=False, follow_redirects=False
         ) as client:
             app.state.http = client
-            app.state.brane = BraneClient(s, client)
+            app.state.gateway_kill = False
+            app.state.outage_lock = asyncio.Lock()
+            app.state.brane = BraneClient(s, client, app.state)
             yield
 
     app = FastAPI(title="Synthetic whistleblower intake", lifespan=lifespan)

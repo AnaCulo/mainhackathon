@@ -71,6 +71,9 @@ pre { margin: 6px 0 0; background: var(--code); padding: 8px; border-radius: 6px
 .kv span { font: 12px ui-monospace, Menlo, monospace; background: var(--chip); padding: 1px 6px; border-radius: 4px; }
 .empty { color: var(--muted); }
 a { color: var(--accent); }
+#redteam { grid-column: 1 / -1; }
+.red-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+@media(max-width:700px) { .red-grid { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -114,6 +117,11 @@ a { color: var(--accent); }
   <section class="card" aria-labelledby="bts">
     <h2 id="bts">Behind the scenes</h2>
     <div id="timeline"><p class="empty">Each message you send appears here step by step: local screening, what was sent to BRANE, BRANE's decision, the model check, and the case handed to a human.</p></div>
+  </section>
+  <section class="card" id="redteam">
+    <h2>Red team</h2><div class="row" id="fixtures"></div>
+    <p class="hint">Kill switch: BRANE treated as unreachable (no request leaves this machine)</p>
+    <div id="redResult" aria-live="polite"></div>
   </section>
 </main>
 <script>
@@ -349,6 +357,55 @@ function stopTalk() {
     } else if (r.status !== 200) { $("talk").textContent = "Transcription failed, try again"; }
   }, POST_ROLL * 1000);
 }
+
+function markedOriginal(sample) {
+  const pre = el("pre");
+  let rest = sample.text;
+  while (rest) {
+    const next = sample.highlights.map(word => ({word, at:rest.indexOf(word)}))
+      .filter(x => x.at >= 0).sort((a,b) => a.at - b.at || b.word.length - a.word.length)[0];
+    if (!next) { pre.append(rest); break; }
+    pre.append(rest.slice(0,next.at), el("mark", {}, next.word));
+    rest = rest.slice(next.at + next.word.length);
+  }
+  return pre;
+}
+
+async function runFixture(sample) {
+  const buttons = $("fixtures").querySelectorAll("button");
+  buttons.forEach(b => b.disabled = true);
+  $("redResult").textContent = "Running " + sample.id + "…";
+  try {
+    const r = await api("/ui/redteam/run", {id:sample.id});
+    if (!r.trace) throw Error("The fixture could not run.");
+    const left = el("div", {}, el("h3", {}, "What the reporter wrote"), markedOriginal(sample));
+    const right = el("div", {}, el("h3", {}, "What left this machine"),
+      el("b", {}, "Model-bound user content"),
+      el("pre", {}, r.outbound_messages.join("\\n") || "Nothing — 0 model calls"),
+      el("p", {}, "HTTP " + r.status + " · " + r.ms + " ms · completion attempts " + r.completion_attempts),
+      el("b", {}, "BRANE completion headers"), el("pre", {}, JSON.stringify(r.completion_headers,null,2)));
+    const decisions = r.trace.filter(e => ["PROTECT","LOCAL_ONLY","BLOCK","ALLOW","HUMAN_ONLY"].includes(e.action));
+    right.append(el("div", {class:"kv"}, ...decisions.map(e =>
+      el("span", {}, [e.policy,e.action,e.count].filter(v => v != null).join(" · ")))));
+    right.append(el("h3", {}, "Case receipt"), el("pre", {}, JSON.stringify(r.case,null,2)),
+      el("p", {}, "Register delivery · " + (r.delivery || "unknown")));
+    if (r.handler_url) right.append(el("a", {href:r.handler_url}, "Open case in the handler queue"));
+    right.append(el("details", {}, el("summary", {}, "Request audit"), el("pre", {}, JSON.stringify(r.trace,null,2))));
+    $("redResult").replaceChildren(el("div", {class:"red-grid"}, left, right));
+  } catch (err) {
+    $("redResult").textContent = "Fixture unavailable. Check the local intake service.";
+  } finally {
+    buttons.forEach(b => b.disabled = false);
+  }
+}
+
+api("/ui/redteam/cases").then(r => {
+  for (const sample of r.cases) {
+    const button = el("button", {type:"button"}, sample.id === "OUTAGE" ? "BRANE down" : sample.id);
+    button.onclick = () => runFixture(sample);
+    $("fixtures").append(button);
+  }
+}).catch(() => { $("redResult").textContent = "Local fixtures unavailable."; });
 
 $("send").onclick = send;
 $("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });

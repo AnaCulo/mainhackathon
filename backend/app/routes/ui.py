@@ -13,6 +13,7 @@ for the "behind the scenes" panel. The UI only answers on loopback with a local 
 and never through a tunnel or proxy.
 """
 import json
+import os
 import time
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -22,6 +23,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel, ConfigDict, Field
 
+from ..brane_client import outage_request
 from ..config import MODEL
 from ..policies import QUESTIONS
 
@@ -161,3 +163,66 @@ async def voice_clip(name: str):
         if path.exists():
             return FileResponse(path, media_type=media)
     raise HTTPException(404)
+
+REDTEAM_IDS = ("T1", "T3", "T4", "T5", "E1", "E6", "OUTAGE")
+FIXTURES = Path(__file__).resolve().parents[3] / "data" / "synthetic_reports.json"
+
+
+def redteam_cases():
+    cases = {c["id"]: c for c in json.loads(FIXTURES.read_text(encoding="utf-8"))["cases"]}
+    result = []
+    for key in REDTEAM_IDS:
+        example = cases["T1" if key == "OUTAGE" else key]
+        text = example.get("panel_report") or "\n\n".join(filter(None, (example["report"], example["evidence"])))
+        result.append({"id": key, "text": text,
+                       "highlights": [s for s in example["must_not_egress"] if s in text]})
+    return result
+
+
+class RedteamRun(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str = Field(max_length=8)
+
+
+@router.get("/ui/redteam/cases")
+async def list_redteam():
+    return {"cases": redteam_cases()}
+
+
+@router.post("/ui/redteam/run")
+async def run_redteam(body: RedteamRun, request: Request):
+    sample = next((c for c in redteam_cases() if c["id"] == body.id), None)
+    if sample is None:
+        raise HTTPException(422, "unknown_fixture")
+    started = time.perf_counter()
+    state = request.app.state
+    headers = {"Authorization": "Bearer " + state.settings.backend_key, "Idempotency-Key": str(uuid4())}
+    async with internal(request) as client:
+        async def report():
+            return await client.post("/reports", json={"text": sample["text"]}, headers=headers)
+        if body.id == "OUTAGE":
+            async with state.outage_lock:
+                token = outage_request.set(True)
+                state.gateway_kill = True
+                try:
+                    response = await report()
+                finally:
+                    state.gateway_kill = False
+                    outage_request.reset(token)
+        else:
+            response = await report()
+    rid = response.headers["x-request-id"]
+    events = trace(state.db, rid)
+    case = response.json()
+    cid = case.get("case_id")
+    with state.db.connection() as con:
+        delivery = con.execute("SELECT state FROM outbox WHERE case_id=?", (cid,)).fetchone()
+    return {"id": body.id, "status": response.status_code, "case": case, "request_id": rid, "trace": events,
+            "outbound_messages": [msg for e in events if e["action"] == "outbound_messages"
+                                  for msg in e["meta"]["messages"]],
+            "completion_headers": next((e["meta"] for e in events if e["source"] == "gateway"
+                                        and e["action"] in {"ALLOW", "headers_rejected"}), {}),
+            "completion_attempts": sum(e["action"] == "completion_attempted" for e in events),
+            "delivery": delivery[0] if delivery else None,
+            "handler_url": f"http://127.0.0.1:{int(os.getenv('DEMO_REGISTER_PORT', '8788'))}/review/{cid}" if cid else None,
+            "ms": round((time.perf_counter() - started) * 1000)}

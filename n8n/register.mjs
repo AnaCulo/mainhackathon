@@ -4,9 +4,9 @@ import {validate,digest,reject} from './contract.mjs';
 import {clocks,localDay} from './calendar.mjs';
 
 export class Register {
-  constructor(path, {actor='handler', demo=false, now=Date.now, routes=[], reviewBase='http://127.0.0.1:8788', table=false}={}) {
+  constructor(path, {actor='handler', demo=false, now=Date.now, routes=[], reviewBase='http://127.0.0.1:8788', table=false, presenterMailbox=false}={}) {
     this.db=new DatabaseSync(path);
-    Object.assign(this,{actor,demo,now,reviewBase,table});
+    Object.assign(this,{actor,demo,now,reviewBase,table,presenterMailbox});
     this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=3000;
       CREATE TABLE IF NOT EXISTS cases(id TEXT PRIMARY KEY, digest TEXT NOT NULL, payload TEXT NOT NULL, task TEXT UNIQUE, actor TEXT,
         accepted TEXT, demo INTEGER, decision TEXT, reason TEXT, decided TEXT, feedback TEXT, approved TEXT, clocks TEXT);
@@ -32,6 +32,7 @@ export class Register {
       if(prior){if(prior.digest!==digest(json)) reject(409);return 200;}
       this.db.prepare('INSERT INTO cases(id,digest,payload,task,actor,accepted,demo,clocks) VALUES(?,?,?,?,?,?,?,?)')
         .run(data.id,digest(json),json,randomUUID(),this.actor,this.time(),+this.demo,JSON.stringify(clocks(data.received,null,null,this.now())));
+      if(this.demo && this.presenterMailbox)this.db.prepare('INSERT OR IGNORE INTO routes VALUES(?)').run(data.id);
       this.add(data.id,'ack','local reporter inbox');
       this.add(data.id,'notify','designated email capture');
       if(this.table)this.add(data.id,'table','n8n Data Table');

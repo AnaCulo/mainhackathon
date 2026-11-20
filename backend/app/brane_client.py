@@ -1,5 +1,7 @@
 """Adapter for the hosted API documented in the repository's BRANE.md."""
 
+from contextvars import ContextVar
+
 import asyncio
 import hashlib
 import json
@@ -9,6 +11,9 @@ import httpx
 
 from .config import HOSTED, MODEL
 from .security import Stop
+
+
+outage_request = ContextVar('outage_request', default=False)
 
 
 def policy_digest(document):
@@ -26,7 +31,8 @@ DELTA_KEYS = {"role", "content", "reasoning", "reasoning_details"}
 
 
 class BraneClient:
-    def __init__(self, settings, http: httpx.AsyncClient):
+    def __init__(self, settings, http: httpx.AsyncClient, state=None):
+        self.state = state
         self.s, self.http = settings, http
         self.available = None
 
@@ -209,6 +215,9 @@ class BraneClient:
         raise Stop(503, "incomplete_gateway_stream")
 
     async def complete(self, messages, request_id, audit, *, stream=False):
+        if (self.s.environment == "development" and outage_request.get() and
+                self.state is not None and self.state.gateway_kill):
+            raise Stop(503, "gateway_unverifiable")
         if not self.configured:
             raise Stop(503, "gateway_not_configured")
         headers = {

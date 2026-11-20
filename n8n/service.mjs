@@ -101,7 +101,7 @@ if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href){
   if(reviewOnly && (!e.CASE_DIR || !id || !existsSync(file)))throw Error('Supply CASE_DIR with an existing register.sqlite and a case ID.');
   if(!reviewOnly)mkdirSync(dir,{recursive:true,mode:0o700});
   const sendTable=reviewOnly?undefined:tableAdapter(e);
-  const r=new Register(file,{actor:e.HANDLER_REF??'handler',demo:e.DEMO_CLOCK==='1',table:!!sendTable,
+  const r=new Register(file,{actor:e.HANDLER_REF??'handler',demo:e.DEMO_CLOCK==='1',table:!!sendTable,presenterMailbox:e.DEMO_INTAKE==='1',
     reviewBase:'http://127.0.0.1:'+Number(e.DEMO_REGISTER_PORT??8788),
     routes:reviewOnly?[]:(e.SYNTHETIC_MAILBOX_CASES??'').split(',').filter(Boolean)});
   if(cmd==='route')r.route(id);
