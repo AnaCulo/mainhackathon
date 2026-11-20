@@ -40,3 +40,11 @@ Here `allow` applies to the **already screened** candidate. This implementation 
 ## Open items for the demo
 
 Supply the team key, approved policy export/fingerprint and current tenant traces. Verify preview and completion agreement under the governed policy, including streaming headers, across the actual model configuration. Identify the tenant's supported request correlation or ask the organisers for a trace. Validate Person A's final matrix and storage/voice conditions. Existing mock tests exercise the transport and safety logic without claiming live cloud behavior.
+
+## Pseudonym tokens at the gateway (20 Nov, policy-v2)
+
+BRANE's PERSON detector flags the case tokens `PERSON_01` and `REPORTER_01` as names. The backend releases only previews with zero detections, so any report with a recognised person used to stop with `preview_not_clean`. BRANE's own placeholder form previews clean on the live tenant. `agent.to_gateway` therefore renders tokens as `<PERSON_1>` / `<REPORTER_1>` in outbound messages, and `agent.from_gateway` converts the model's answer back before schema and grounding validation. Case JSON, n8n and the local mapping keep `PERSON_01`.
+
+Ordinary policy breaches linked to one accused person now produce a tokenised cloud draft, following the policy matrix's P2/P5 row (*"PERSON_01 allegedly approved a purchase without the required second sign-off."*). Criminal-offence wording stays local under P3. Live run on policy-v2 against the synthetic fixtures:
+- T1, T3, P3a, E1, E4 and E5 returned cases.
+- T2, T4, T5, P3b, E2 and E3 were held locally.

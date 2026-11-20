@@ -1,4 +1,5 @@
 import json
+import re
 
 from pydantic import ValidationError
 
@@ -21,9 +22,25 @@ VOICE_PROMPT = (
 )
 
 
+# BRANE's PERSON detector flags our case tokens (PERSON_01, REPORTER_01) as names, which
+# makes every preview with a pseudonym unclean. Its own placeholder form (<PERSON_1>)
+# previews clean, so tokens are rendered that way only for the gateway and translated
+# back before validation. Case JSON, n8n and the local mapping keep PERSON_01.
+_CASE_TOKEN = re.compile(r"\b(PERSON|REPORTER)_(\d{2})\b")
+_GATEWAY_TOKEN = re.compile(r"<(PERSON|REPORTER)_(\d{1,2})>")
+
+
+def to_gateway(text):
+    return _CASE_TOKEN.sub(lambda m: f"<{m[1]}_{int(m[2])}>", text)
+
+
+def from_gateway(text):
+    return _GATEWAY_TOKEN.sub(lambda m: f"{m[1]}_{int(m[2]):02}", text)
+
+
 def parse_case(content, screened):
     try:
-        result = Extraction.model_validate_json(content)
+        result = Extraction.model_validate_json(from_gateway(content))
     except (ValueError, ValidationError):
         raise Stop(502, "invalid_model_output") from None
     # Even schema-valid strings could contain restored names, indirect identifiers
@@ -52,7 +69,7 @@ def messages(system, data):
         {"role": "system", "content": system},
         {
             "role": "user",
-            "content": json.dumps(data, ensure_ascii=True, sort_keys=True),
+            "content": to_gateway(json.dumps(data, ensure_ascii=True, sort_keys=True)),
         },
     ]
 

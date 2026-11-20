@@ -97,8 +97,11 @@ def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
         bind("reporter", [match[1].rstrip(".")])
     name_word = r"[^\W\d_]+(?:[-’'][^\W\d_]+)*"
     full_name = rf"{name_word}(?:\s+(?:de|van|von|der|da|al)){{0,2}}\s+{name_word}"
+    verbs = r"(?:allegedly\s+|has been\s+)?(?:changed|approved|approving|denied|signed|told)"
     subjects = [
-        rf"(?<!\w)({full_name})\s+(?:changed|approved|denied|signed|told)\b",
+        rf"(?<!\w)({full_name})\s+{verbs}\b",
+        # Apposition: "Ivo Laan, my team lead, allegedly approved ..."
+        rf"(?<!\w)({full_name}),\s+(?:my|the|our|a)\s+[^,.;\n]{{1,60}},\s+{verbs}\b",
         rf"\b(?:I witnessed|I saw|I asked|my manager is)\s+({full_name})\b",
     ]
     for pattern in subjects:
@@ -144,6 +147,13 @@ def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
         text.strip(),
         re.IGNORECASE,
     )
+    # Ordinary policy breach linked to exactly one accused person (matrix P2/P5 row):
+    # the token plus a fixed sentence may leave; criminal wording is caught earlier by P3.
+    accused = list(dict.fromkeys(mentions))
+    if len(accused) == 1:
+        for cat, pattern, template in RULES.get("person_observations", []):
+            if re.search(pattern, text, re.IGNORECASE | re.DOTALL):
+                topics.insert(0, (cat, template.format(person=accused[0])))
     if obstruction:
         place, condition, material = (
             v.lower() if v else None for v in obstruction.groups()
