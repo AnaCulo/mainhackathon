@@ -140,7 +140,7 @@ def run():
                          {"DEMO_INTAKE": "0" if args.offline else "1"}, runtime / "register.log", ROOT)
         wait_for(register, register_port, "/review", 401)
         if args.offline:
-            print("Offline walkthrough with simulated BRANE.", flush=True)
+            print("LEGACY NODE ADAPTER (historical recording path) — the live product is backend/app (Python)", flush=True)
             cmd = [node, "n8n/walkthrough.mjs"] + (["--hold"] if args.hold else [])
             subprocess.run(cmd, env=local_env | demo, cwd=ROOT, check=True)
             if args.hold:
@@ -175,7 +175,7 @@ def run():
                                     "--port", str(intake_port), "--no-access-log"], intake_env,
                             runtime / "backend.log", directory)
             wait_for(service, intake_port, "/health")
-            print(f"Submit at {LOCAL}:{intake_port}/demo as handler. Private login in {config}", flush=True)
+            print(f"Submit at {LOCAL}:{intake_port}/. Private login in {config}", flush=True)
             if args.trace or not args.hold:
                 subprocess.run([sys.executable, "n8n/live-trace.py", str(config)], cwd=ROOT,
                                env=local_env, check=True)

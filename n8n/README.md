@@ -28,13 +28,13 @@ export DEMO_BACKEND_ENV="$HOME/.config/culo/whistleblower.env"
 ./n8n/demo.sh --hold
 ```
 
-When injecting deployment secrets directly, omit the file setting. Both launchers run `n8n/demo.py`. It starts a fresh, loopback-only n8n instance, imports and activates the protected-case workflow, starts the register and serves the presenter from `app.demo:create_demo`. It generates the intake bearer, storage key, handler password and webhook credentials for this instance. Only the intake backend receives the BRANE credential among the services. `BRANE_TOKEN`, `BRANE_CHECK_URL` and `BRANE_CHAT_URL` belong to the separate Node loopback adapter.
+When injecting deployment secrets directly, omit the file setting. Both launchers run `n8n/demo.py`. It starts a fresh, loopback-only n8n instance, imports and activates the protected-case workflow, starts the register and serves the presenter from `app.demo:create_demo`. It generates the intake bearer, storage key, handler password and webhook credentials for this instance. Only the intake backend receives the BRANE credential among the services. `BRANE_TOKEN`, `BRANE_CHECK_URL` and `BRANE_CHAT_URL` belong to the historical adapter in `legacy/node-adapter/`.
 
-Open the printed **Submit** URL (normally http://127.0.0.1:8000/demo), or follow **Submit a synthetic report** on the handler queue at http://127.0.0.1:8788/review. Use `handler` and the generated `HANDLER_PASSWORD` from the indicated private file. Default ports are 8000 for intake, 5689 for n8n, 5679 for its task broker and 8788 for review. Add `-Isolated` or `--isolated` to use fresh ports alongside a running demo. Press Enter in the launcher to stop this instance.
+Open the printed **Submit** URL (normally http://127.0.0.1:8000/), or follow **Submit a synthetic report** on the handler queue at http://127.0.0.1:8788/review. Use `handler` and the generated `HANDLER_PASSWORD` from the indicated private file. Default ports are 8000 for intake, 5689 for n8n, 5679 for its task broker and 8788 for review. Add `-Isolated` or `--isolated` to use fresh ports alongside a running demo. Press Enter in the launcher to stop this instance.
 
 ### Synthetic smoke test
 
-Enter “Two invoice totals differ. The discrepancy appeared on Thursday. The ledger has both entries.” Click **Prepare case for review**. On success the form shows a grounded summary, request ID and a link to that case. Open it and check the reported fact, Thursday timeline, ledger evidence and **Human decision · pending**. A designated handler records the decision. For an unattended submission through this same form, omit the hold flag. `-Trace` or `--trace` also submits the form and prints the receipt while holding on a successful run.
+For the presenter smoke test open `/demo`. Enter “Two invoice totals differ. The discrepancy appeared on Thursday. The ledger has both entries.” Click **Prepare case for review**. On success the form shows a grounded summary, request ID and a link to that case. Open it and check the reported fact, Thursday timeline, ledger evidence and **Human decision · pending**. A designated handler records the decision. For an unattended submission through this same form, omit the hold flag. `-Trace` or `--trace` also submits the form and prints the receipt while holding on a successful run.
 
 To inspect a manual submission, run the following with the printed private config path and the request ID from the screen. The trace joins the backend audit, outbox and register, and writes a content-free JSON receipt to the private case directory. The source fingerprint identifies the actual launcher and backend even for an uncommitted checkout or archive.
 
@@ -42,13 +42,13 @@ To inspect a manual submission, run the following with the printed private confi
 python n8n/live-trace.py <private-demo.env> --request-id <uuid>
 ```
 
-A refusal or local hold shows **Submission failed** with HTTP 422. Missing credentials or policy pin, unavailable catalog or protection check, timeout, or unverifiable route give 503. An unusable model answer or unconfirmed webhook gives 502. BRANE failures create no successful workflow delivery. A webhook failure after a validated completion may leave a pending outbox entry. After a timeout during completion, upstream execution is unknown. The trace distinguishes an attempted completion from a validated result.
+A policy hold returns 202 and a case receipt. An unverifiable gateway or invalid model output returns 5xx with a held receipt. Both queue a content-free register task and start the same deadlines. Check the outbox and the register to establish delivery. A timed-out completion has an unknown upstream outcome.
 
 For a failure smoke, start a separate isolated instance with `BRANE_API_KEY` empty, submit a fresh permitted report and verify 503, zero completion attempts, zero delivery attempts and an empty queue. Never change the shared tenant policy to simulate an outage. The recorded open-policy baseline failed protection tests. Use only permitted synthetic controls until the current policy and release behavior are independently verified.
 
 ### Explicit offline tests
 
-`-Offline` or `--offline` selects the original fixed-report walkthrough on its disposable default ports. It uses simulated BRANE and a real local n8n workflow. Run `node --test n8n/register.test.mjs backend/intake.test.mjs` and, from `backend/`, `python -m pytest -q` for the contract and presenter regressions. Set `N8N_PACKAGE` to an installed n8n 2.48.7 package directory to include the default-launcher regression. It starts a real, isolated n8n instance and submits the presenter form without a team key. The Unix options `--python` and `--voice` also run the historical report suite or the closed voice harness against the governed backend on the default ports.
+`-Offline` or `--offline` selects the original fixed-report walkthrough on its disposable default ports. It uses simulated BRANE and a real local n8n workflow. Run `node --test n8n/register.test.mjs legacy/node-adapter/intake.test.mjs` and, from `backend/`, `python -m pytest -q` for the contract and presenter regressions. Set `N8N_PACKAGE` to an installed n8n 2.48.7 package directory to include the default-launcher regression. It starts a real, isolated n8n instance and submits the presenter form without a team key. The Unix options `--python` and `--voice` also run the historical report suite or the closed voice harness against the governed backend on the default ports.
 
 ## Import into an existing local instance
 

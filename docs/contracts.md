@@ -1,13 +1,13 @@
 # Whistleblower intake integration
 
-The [presenter launchers](../n8n/README.md) use the Python intake handler and its hosted BRANE adapter. The contract below describes the separate Node implementation. Use synthetic reports throughout the hackathon. Person B's service runs as a single Node 24 process. Run the contract tests from the repository root with `node --test backend/intake.test.mjs`. They start disposable HTTP services on loopback and use in-memory SQLite. They exercise the application boundaries. The team still needs to run Person C's protocol against the actual BRANE deployment.
+The [presenter launchers](../n8n/README.md) use the Python intake handler and its hosted BRANE adapter. The contract below describes the separate Node implementation. Use synthetic reports throughout the hackathon. Person B's service runs as a single Node 24 process. Run the contract tests from the repository root with `node --test legacy/node-adapter/intake.test.mjs`. They start disposable HTTP services on loopback and use in-memory SQLite. They exercise the application boundaries. The team still needs to run Person C's protocol against the actual BRANE deployment.
 
 ## Running the backend
 
 Copy the settings from `.env.example` to a private environment file outside the synced checkout. Set a dedicated intake token for the callers, both local BRANE endpoints, the approved OpenAI model alias, and Person D's n8n webhook. Supply upstream credentials as required by each service. In PowerShell, start the backend with the path to that file.
 
 ```powershell
-node --env-file="$env:LOCALAPPDATA\whistleblower.env" backend/server.mjs
+node --env-file="$env:LOCALAPPDATA\whistleblower.env" legacy/node-adapter/server.mjs
 ```
 
 The server listens on 127.0.0.1:8000. Identity mappings are scoped to the case ID and stored in SQLite under the user's local application data directory. Keep the database and its journals on a private, unsynced volume. Each request emits a JSON log with a server-generated request ID, route, status, outcome and decision counts. The same request ID is returned in the response headers.

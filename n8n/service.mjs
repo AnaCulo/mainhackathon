@@ -65,7 +65,7 @@ export function service(r,{wire,secret,password,sendTable,intakePort,reviewOnly=
       if(req.method==='GET' && req.url==='/review'){
         const links=r.db.prepare('SELECT id FROM cases WHERE actor=? ORDER BY rowid DESC').all(r.actor)
           .map(c=>'<li><a href="/review/'+encodeURIComponent(c.id)+'">'+esc(c.id)+'</a></li>').join('');
-        const intake=intakePort?'<a href="http://127.0.0.1:'+Number(intakePort)+'/demo">Submit a synthetic report</a>':'';
+        const intake=intakePort?'<a href="http://127.0.0.1:'+Number(intakePort)+'/">Submit a synthetic report</a>':'';
         return reply(200,page('Review queue',intake+'<ul>'+links+'</ul>'),'text/html; charset=utf-8');
       }
       const match=/^\/review\/([^/?#]+)$/.exec(req.url),c=match && r.get(decodeURIComponent(match[1]));

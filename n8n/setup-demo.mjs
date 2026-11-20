@@ -36,7 +36,7 @@ for(const [name,value] of [['Protected intake',config.N8N_TOKEN],['Local dispatc
 }
 const table=await call('/api/v1/data-tables','POST',{name:'Protected case references',columns:['case_id','received_at'].map(name=>({name,type:'string'}))});
 config.TABLE_ID=table.id;
-config.TABLE_API_KEY=await issue('Case reference index',scopes.filter(s=>['dataTableRow:read','dataTableRow:create'].includes(s)));
+config.TABLE_API_KEY = await issue('Case reference index',scopes.filter(s=>['dataTableRow:read','dataTableRow:create'].includes(s)));
 const {name,nodes,connections,settings:workflowSettings}=wf;
 const saved=await call('/api/v1/workflows','POST',{name,nodes,connections,settings:workflowSettings});
 await call('/api/v1/workflows/'+saved.id+'/activate','POST',{});

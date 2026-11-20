@@ -6,7 +6,12 @@ Submit a synthetic report and follow its case link to the human review form. The
 
 Use the current checkout with Node 24, npm, Python 3.13 and the backend requirements installed. Configure the private BRANE credential and approved policy fingerprint as described in the [presenter setup guide](n8n/README.md).
 
-On Windows, run `.\n8n\demo.ps1 -Hold`. On macOS or Linux, run `./n8n/demo.sh --hold`. Open the printed intake URL, submit a fresh synthetic report and follow the link to its case. The recorded pitch and submission archives reflect earlier builds.
+Run `./n8n/demo.sh --hold` on macOS or Linux, or `.\n8n\demo.ps1 -Hold` on Windows.
+
+1. Open [reporter intake](http://127.0.0.1:8000/) to submit a synthetic report or use the Red team buttons. The behind-the-scenes panel shows the local decisions and governed model requests.
+2. Open the [handler queue](http://127.0.0.1:8788/review) with the presenter’s designated handler login. Select the case to inspect its acknowledgement, deadlines and pending human decision.
+
+Python FastAPI in `backend/app` serves this demo. The [legacy Node adapter](legacy/node-adapter/) reproduces the historical recording.
 
 ## Inspect the workflow and evidence
 

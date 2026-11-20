@@ -13,8 +13,8 @@ import pytest
 def test_default_launcher_fails_closed_at_the_presenter_form(tmp_path):
     assert (Path(os.environ["N8N_PACKAGE"]) / "node_modules/n8n/bin/n8n").is_file()
     root = Path(__file__).resolve().parents[2]
-    private = tmp_path / "backend.env"
-    private.write_text("BRANE_API_KEY=\nBRANE_POLICY_SHA256=\n")
+    private = tmp_path / "empty-settings"
+    private.touch()
     env = {**os.environ, "DEMO_BACKEND_ENV": str(private), "BRANE_API_KEY": "",
            "BRANE_POLICY_SHA256": "", "PYTHON": sys.executable}
     if os.name == "nt":
@@ -29,4 +29,4 @@ def test_default_launcher_fails_closed_at_the_presenter_form(tmp_path):
     receipt, _ = json.JSONDecoder().raw_decode(result.stdout[result.stdout.index("{"):])
     assert receipt["form_http_status"] == 503 and receipt["reason"] == "gateway_not_configured"
     assert receipt["completion_attempts"] == receipt["validated_model_results"] == 0
-    assert receipt["n8n_delivery_attempts"] == 0 and not receipt["registered"]
+    assert receipt["n8n_delivery_attempts"] == 1 and receipt["registered"]

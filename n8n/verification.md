@@ -28,5 +28,5 @@ Python 3c7dda9 reserves receipt durably before model work. Its sender uses a fiv
 
 The approved production dispatcher, SSO/alternate-handler assignment, working employer oral/meeting channel, processor approvals and deployment review are outside the demonstrated setup. The four role scripts and synthetic case capture do not establish those production capabilities.
 
-**Reproduce:** run `.\n8n\demo.ps1` and `node --test n8n/register.test.mjs backend/intake.test.mjs`. See [setup and field handling](README.md) and [the team's baseline trace](https://github.com/AnaCulo/mainhackathon/blob/a89e570/evidence/run_20261120-162747.json).
+**Reproduce:** run `.\n8n\demo.ps1` and `node --test n8n/register.test.mjs legacy/node-adapter/intake.test.mjs`. See [setup and field handling](README.md) and [the team's baseline trace](https://github.com/AnaCulo/mainhackathon/blob/a89e570/evidence/run_20261120-162747.json).
 

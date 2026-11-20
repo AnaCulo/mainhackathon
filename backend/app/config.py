@@ -29,6 +29,8 @@ class Settings:
     def load(cls):
         load_dotenv(Path(".env"), override=False)
         get = os.environ.get
+        if get("LOCAL_DRAFT_MODEL"):
+            raise ValueError("Local drafting is disabled in this build")
         url = get("DATABASE_URL", "sqlite:///./whistleblower.db")
         if not url.startswith("sqlite:///") or not url[10:]:
             raise ValueError("A file-backed SQLite database is required")

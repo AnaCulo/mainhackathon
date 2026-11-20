@@ -50,7 +50,7 @@ Prepare the team policy and review the workbench with Person A before pinning it
 From `backend/`, with the virtual environment active, export the server credentials in your local shell. The example reads the intake key without printing it.
 
 ```sh
-export BACKEND_API_KEY="$(python -c 'from dotenv import dotenv_values; print(dotenv_values(".env")["BACKEND_API_KEY"])')"
+export BACKEND_API_KEY  # provision in the private process environment
 curl -sS http://127.0.0.1:8000/health
 curl -i http://127.0.0.1:8000/reports \
   -H "Authorization: Bearer $BACKEND_API_KEY" \
