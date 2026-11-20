@@ -56,9 +56,7 @@ The access email lists these model IDs. Confirm availability with `GET /models` 
 
 ## Connect BRANE to the hotline
 
-**Integration status.** The organizer's starter can call the hosted gateway directly. The Node backend currently accepts numeric loopback addresses for both `BRANE_CHECK_URL` and `BRANE_CHAT_URL` and uses `BRANE_TOKEN` and `BRANE_MODEL`. Setting those URLs to the hosted endpoint will fail validation. The local contract tests use disposable services. See [the backend contract](docs/contracts.md) and [the adapter implementation](backend/integrations.mjs).
-
-The integration work is to map the hosted service to the backend's local protection and chat operations. The check contract requires complete P1–P4 coverage, UTF-16 span offsets, and stable entity references for aliases. The supplied kit documents a policy preview and a governed completion. It does not establish that the preview provides those offsets or resolves aliases. Verify these capabilities before relying on them. Keep the identity mapping in local SQLite and preserve the backend's stop-on-failure behavior. The project contract calls for an approved OpenAI model, so use the agreed explicit model ID for that path. The starter uses `auto`.
+**Python backend.** The FastAPI implementation uses the hosted policy, preview and governed chat routes below the configured API root. It keeps raw synthetic reports and local identity mappings in protected SQLite fields. It requires a pinned, reviewed tenant policy and validates the actual completion headers before releasing text or voice output. The local smoke test uses simulated upstreams. Live enforcement needs separate tenant verification. See the [adapter and evidence guide](docs/brane-integration.md) and [API contract](docs/backend-api.md).
 
 | Project rule | Intended enforcement and evidence |
 | --- | --- |
@@ -95,4 +93,4 @@ For each run, record the synthetic input, expected outcome, actual output and us
 - **Test evidence** — Complete `MAIN_Five_Tests_Template.csv` with observed results for the five mandatory tests, the T5 discrepancy above, and five handwritten domain edge cases. Include the effect on the quality of the draft case brief.
 - **Working agent and three-minute demo** — Follow one synthetic report through the BRANE decision, protected execution, and visible human sign-off. Compare a measured outcome such as time to prepare a review-ready case against the same task performed manually.
 
-Source materials are the Group Čulo access email, `MAIN_Summit_AI-Z_Challenge_Brief.pdf`, the two named CSV templates, and the extracted kit's `starter-kit/README.md` and `starter-kit/brane_agent_starter.py`. Project policy IDs and backend behavior come from this repository's [integration contract](docs/contracts.md).
+Source materials are the Group Čulo access email, `MAIN_Summit_AI-Z_Challenge_Brief.pdf`, the two named CSV templates, and the extracted kit's `starter-kit/README.md` and `starter-kit/brane_agent_starter.py`. The Python backend contract is in [the API reference](docs/backend-api.md).
