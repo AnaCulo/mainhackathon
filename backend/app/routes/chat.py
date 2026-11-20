@@ -55,7 +55,7 @@ async def chat(body: Chat, request: Request):
             if len(turns) != len(previous) + 1:
                 raise Stop(409, "missing_turn")
             try:
-                screened = screen("\n".join(turns), [], voice=True)
+                screened = screen("\n".join(turns), [], allow_incomplete=True)
             except Stop as exc:
                 if exc.policy in {"P3", "P4"}:
                     s.db.save_turn(sid, rev, turns, asked, frozen=2)

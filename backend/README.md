@@ -4,11 +4,11 @@ A synthetic text or voice report becomes a protected draft for a human case hand
 
 ## Run locally
 
-From the repository root, use Python 3.12 or later.
+From the repository root, use Python 3.13 on Windows for the local encrypted evidence store. The presenter setup also uses Python 3.13.
 
 ```sh
 cd backend
-python3.12 -m venv .venv
+python3.13 -m venv .venv
 . .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install --only-binary=:all: -r requirements.txt
@@ -89,6 +89,14 @@ FROM audit_events WHERE request_id = :request_id ORDER BY event_id;
 SELECT case_id, state, attempts, updated_at FROM outbox;
 ```
 
-Local facts are deliberately coarse. The extractor admits configured topics and safe observation patterns, broad place/time hints, evidence types and limited identity introductions. Trusted callers can supply Unicode aliases. Unrecognised free text stays in encrypted evidence. Person-specific allegations, exact contact details, rare roles and arbitrary model prose are excluded from shared summaries. A report without a recognised independent topic is held locally with HTTP 422. A generic draft can require substantial manual reconstruction. Automatic identification and sensitive-category recognition have limited coverage. The protected vocabulary is the egress control even when recognition misses something.
+Local facts are deliberately coarse. The extractor admits configured topics and safe observation patterns, broad place/time hints, evidence types and limited identity introductions. Trusted callers can supply Unicode aliases. Unrecognised free text stays in encrypted evidence. A supported ordinary purchase-approval allegation can appear under a case token. Exact contact details, rare roles and arbitrary model prose are excluded from shared summaries. A report without a recognised independent topic is held locally with HTTP 422. A generic draft can require substantial manual reconstruction. Automatic identification and sensitive-category recognition have limited coverage. The protected vocabulary is the egress control even when recognition misses something.
 
 The backend contains no human decision endpoint. The open item goes to Person D's authorised workflow. Person A must approve local retention, the release vocabulary, the final policy matrix, tenant settings and the synthetic voice workflow. The live BRANE test is opt-in. ElevenLabs and n8n tenant operation remain separate integration checks.
+
+### Reviewing an incomplete report
+
+The optional [text clarification endpoint](../docs/backend-api.md#post-reportsclarify) uses the same local gap checks as the voice bridge. For a synthetic demo, start with “I was told that the emergency exit was blocked by boxes.” Add “It happened yesterday. I have a photo.” and review the questions again. On submission, supported descriptions can distinguish what the reporter observed, heard or suspected. The model selects and orders released observations. The handler sees an unverified account and the types of evidence mentioned. Intake accepts text and has no attachment custody mechanism.
+
+The local extraction version is `synthetic-intake-4`. It recognises bounded English constructions, including a duplicate invoice posting and a named actor directly linked to a purchase approval. Incidental witnesses and mentions of an approval requirement cannot supply the actor or establish a missing approval. Broad topic matches can still produce a generic draft. Recognised P3/P4 content is held before a hosted call. All mandatory previews, including the combined conversation, must report a clean cloud route and return the exact submitted preview text. A missing, truncated or changed preview stops the request before completion.
+
+The submission archives and previously captured live timings describe earlier code. Run the changed release vocabulary and exact combined-preview check against the approved tenant before packaging new live results.

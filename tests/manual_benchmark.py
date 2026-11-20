@@ -18,6 +18,7 @@ import json
 import time
 from datetime import datetime
 from pathlib import Path
+from statistics import median
 
 ROOT = Path(__file__).resolve().parent.parent
 REPORT = "Two invoice totals differ. The discrepancy appeared on Monday. The ledger has both entries."
@@ -58,7 +59,7 @@ for key, question in CHECKS:
         if answer in ("y", "n"):
             break
     checks[key] = answer == "y"
-    if not checks[key]:
+    while not checks[key]:
         fix = ask(f"  Preparer: correct the {key} field now (the clock keeps running): ")
         brief["facts" if key == "fact" else key] = fix
         corrections.append(key)
@@ -92,7 +93,7 @@ print(f"\nManual: {elapsed:.1f} s until the handler could open the brief "
 if agent:
     secs = [a["seconds"] for a in agent]
     print(f"Agent (live BRANE, n={len(secs)}): {min(secs):.1f}–{max(secs):.1f} s, same finish line.")
-    median = sorted(secs)[len(secs) // 2]
-    print(f"Measured difference: manual {elapsed:.1f} s vs agent median {median:.1f} s "
-          f"= {elapsed / median:.1f}× the agent's time (one manual run, synthetic one-sentence report).")
+    agent_median = median(secs)
+    print(f"Measured difference: manual {elapsed:.1f} s vs agent median {agent_median:.1f} s "
+          f"= {elapsed / agent_median:.1f}× the agent's time (one manual run, synthetic report).")
 print(f"Saved {out.relative_to(ROOT)}. Run it once per preparer to increase n.")

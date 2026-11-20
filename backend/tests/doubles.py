@@ -77,7 +77,9 @@ class Double:
                     "matchedSemanticCategories": [],
                     "promptInjection": {"detected": False},
                     "outgoingCloudPayloadPreview": None
-                    if self.fault == "preview"
+                    if self.fault == "preview" or (
+                        self.fault == "combined_payload" and "\n\n{" in body["prompt"]
+                    )
                     else body["prompt"],
                 },
             )

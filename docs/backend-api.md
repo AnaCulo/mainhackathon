@@ -26,11 +26,29 @@ Text is required, nonblank and at most 16,000 characters. Source defaults to tex
     {"policy":"P5","action":"ALLOW","count":null},
     {"policy":"P6","action":"HUMAN_ONLY","count":null}
   ],
-  "brane_status": "ok"
+  "brane_status": "ok",
+  "brief": {
+    "facts": ["The reporter describes an emergency exit blocked by boxes."],
+    "timeline": [],
+    "evidence": []
+  }
 }
 ```
 
 Case IDs are opaque strings. Category is one of fraud, harassment, corruption, safety, discrimination or other. Time is UTC at intake. Persons are case-scoped pseudonyms. The reporter token designates the role even for anonymous intake. P1/P2 PROTECT counts reflect local occurrences. Full source-level evidence lives in audit_events. The case remains awaiting human review even when a webhook succeeds.
+
+## POST /reports/clarify
+
+A trusted text intake client can offer optional questions while a reporter is drafting. Use the same bearer credential and request body as `POST /reports`. Send the current draft on each call. With `{"text":"Two invoice totals differ."}`, the response is:
+
+```json
+{
+  "missing": ["when", "where", "who", "evidence"],
+  "follow_up": ["When did this happen, roughly?", "Where did this happen? A general setting is enough.", "Who was involved? Roles are enough.", "What evidence, if any, is available?"]
+}
+```
+
+These are gaps in what the local rules recognised. The reporter can skip any question, including identity questions, and submit at any point. A recognised role can answer “who” without a name. Conflicting time references leave “when” open. The endpoint applies the local policy checks and returns only fixed fields and questions. It performs no gateway call, persistence, case registration or notification. Label this action **Review draft**. Use the existing **Submit report** action for immediate receipt and local human follow-up, including for restricted reports.
 
 ## POST /v1/chat/completions
 

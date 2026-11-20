@@ -5,9 +5,8 @@ Python 3.9+, standard library only. Reads BRANE_BASE_URL, BRANE_API_KEY, TEAM_BU
 (and optionally BRANE_MODEL) from the environment or from the repo's .env file.
 
 For every synthetic case it:
-  1. calls POST /policy/test (no completion) to see what BRANE detects and the exact
-     payload the cloud model would receive,
-  2. calls POST /chat/completions for the real governed run and records the
+  1. calls POST /policy/test (no completion) to inspect BRANE's proposed egress,
+  2. after acceptable preflight, calls POST /chat/completions and records the
      X-Brane-* headers and the agent's answer,
   3. checks the outgoing cloud payload for protected strings that must not leave
      (a leak fails the test) and for strings the brief needs to stay useful.
@@ -23,9 +22,11 @@ Usage:
 import csv
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -33,6 +34,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data" / "synthetic_reports.json"
 OUT_DIR = ROOT / "evidence"
+GATEWAY = "https://brane.ai-z.io/api/v1"
 
 SYSTEM_PROMPT = (
     "You are the intake assistant of an internal whistleblower reporting channel "
@@ -72,17 +74,25 @@ def load_env():
         sys.exit(f"Missing {', '.join(missing)}. Copy .env.example to .env and add the team key.")
 
 
-def call(method, url, body=None, timeout=120):
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def call(method, url, body=None, timeout=120, *, authenticated=True):
     """Return (status, headers dict, parsed body or text). Never retries, never falls back."""
     data = json.dumps(body).encode("utf-8") if body is not None else None
     req = urllib.request.Request(url, data=data, method=method)
-    req.add_header("Authorization", f"Bearer {os.environ['BRANE_API_KEY']}")
+    if authenticated:
+        if not url.startswith(GATEWAY + "/"):
+            raise ValueError("The security evidence runner requires the approved hosted BRANE endpoint.")
+        req.add_header("Authorization", f"Bearer {os.environ['BRANE_API_KEY']}")
     # The gateway's CDN rejects urllib's default User-Agent (Cloudflare error 1010).
     req.add_header("User-Agent", "hotline-security-tests/1.0")
     if data is not None:
         req.add_header("Content-Type", "application/json")
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with urllib.request.build_opener(NoRedirect()).open(req, timeout=timeout) as resp:
             status, headers, raw = resp.status, resp.headers, resp.read()
     except urllib.error.HTTPError as err:
         status, headers, raw = err.code, err.headers, err.read()
@@ -110,12 +120,16 @@ def build_prompt(case):
 
 def classify(status, headers):
     if status == 422:
-        return "refused"
+        return "refused" if header(headers, "X-Brane-Refused-By") else "unverified_refusal"
+    if status != 200:
+        return f"error_http_{status}"
     route = header(headers, "X-Brane-Routed-To").lower()
     if route == "local":
         return "local"
     if route == "cloud":
-        return "cloud_protected" if header(headers, "X-Brane-Redacted").lower() == "true" else "cloud_clean"
+        return {"true": "cloud_protected", "false": "cloud_clean"}.get(
+            header(headers, "X-Brane-Redacted").lower(), "unverified_cloud"
+        )
     return f"error_http_{status}"
 
 
@@ -125,32 +139,56 @@ def run_case(case, base, model):
     p_status, _, preview = call("POST", f"{base}/policy/test",
                                 {"prompt": prompt, "executeCompletion": False})
     preview = preview if isinstance(preview, dict) else {"raw": preview}
-    decision = preview.get("decision") or {}
+    decision = preview.get("decision")
     egress = preview.get("outgoingCloudPayloadPreview")
-    egress_route = decision.get("route", "")
+    egress_route = decision.get("route", "") if isinstance(decision, dict) else ""
+    reasons = []
+    if p_status != 200 or egress_route not in ("cloud", "local", "refuse", "refused"):
+        reasons.append("missing or invalid policy preview")
+    if egress_route == "cloud":
+        if not isinstance(egress, str) or not egress.strip():
+            reasons.append("cloud preview has no inspectable payload")
+        if not any(v.startswith("cloud_") for v in case["allowed_outcomes"]):
+            reasons.append("cloud route disallowed for this fixture")
+    elif egress:
+        reasons.append("non-cloud preview unexpectedly has an outgoing payload")
+    leaks = [s for s in case["must_not_egress"]
+             if isinstance(egress, str) and s.casefold() in egress.casefold()]
+    if leaks:
+        reasons.append("protected fixture data found in outgoing preview")
+    if egress_route == "cloud" and case.get("same_person_mentions"):
+        tokens = re.findall(r"PERSON_REF_\d+", egress if isinstance(egress, str) else "")
+        if len(set(tokens)) != 1 or len(tokens) != case["same_person_mentions"]:
+            reasons.append("one consistent person token at each expected mention could not be verified")
 
-    c_status, c_headers, completion = call("POST", f"{base}/chat/completions", {
-        "model": model,
-        "messages": [{"role": "system", "content": SYSTEM_PROMPT},
-                     {"role": "user", "content": prompt}],
-    })
-    outcome = classify(c_status, c_headers)
+    c_status, c_headers, completion = None, {}, {}
+    outcome = "not_attempted"
+    if not reasons:
+        c_status, c_headers, completion = call("POST", f"{base}/chat/completions", {
+            "model": model,
+            "messages": [{"role": "system", "content": SYSTEM_PROMPT},
+                         {"role": "user", "content": prompt}],
+        })
+        outcome = classify(c_status, c_headers)
+        if outcome.startswith("cloud_") and (
+            egress_route != "cloud" or header(c_headers, "X-Brane-Model-Resolved") != model
+            or header(c_headers, "X-Brane-Lane") != "governed"
+        ):
+            reasons.append("cloud completion lacks matching preview, model or governed lane")
     answer = ""
     if isinstance(completion, dict) and completion.get("choices"):
         answer = completion["choices"][0].get("message", {}).get("content") or ""
+    elif c_status is None:
+        answer = "Completion withheld at preview."
     elif c_status != 200:
         answer = f"HTTP {c_status}: {json.dumps(completion)[:300] if not isinstance(completion, str) else completion[:300]}"
 
-    # Leak check on what the cloud model would actually receive.
+    # Utility of the proposed cloud payload is reviewed separately from privacy.
     cloud_bound = outcome.startswith("cloud") and isinstance(egress, str)
-    leaks = [s for s in case["must_not_egress"] if cloud_bound and s.lower() in egress.lower()]
     lost = [s for s in case["must_keep"] if cloud_bound and s.lower() not in egress.lower()]
 
-    reasons = []
     if outcome not in case["allowed_outcomes"]:
         reasons.append(f"outcome {outcome} not in {case['allowed_outcomes']}")
-    if leaks:
-        reasons.append("LEAKED to cloud: " + "; ".join(leaks))
     if outcome.startswith("cloud") and not answer.strip():
         reasons.append("empty answer")
     # Placeholder must survive into the draft that goes downstream (BRANE can restore names in answers).
@@ -184,11 +222,13 @@ def run_case(case, base, model):
 def run_unavailable_check(model):
     """T5b: the protection check is unreachable. The client must fail closed (no retry, no direct cloud call)."""
     dead = os.environ.get("BRANE_UNAVAILABLE_URL", "http://127.0.0.1:9/api/v1")
+    if urllib.parse.urlsplit(dead).hostname not in {"localhost", "127.0.0.1", "::1"}:
+        raise ValueError("The outage probe requires a loopback address.")
     started = time.time()
     try:
         status, _, _ = call("POST", f"{dead}/chat/completions",
                             {"model": model, "messages": [{"role": "user", "content": "Synthetic test report."}]},
-                            timeout=10)
+                            timeout=10, authenticated=False)
         result, verdict = f"Unexpected HTTP {status} from unavailable gateway", "FAIL"
     except (urllib.error.URLError, OSError) as err:
         result = (f"Request not sent: gateway unreachable ({err.__class__.__name__}) after "
@@ -231,7 +271,9 @@ def main():
     model = os.environ.get("BRANE_MODEL", "openrouter:openai/gpt-6-luna")
     wanted = {a.upper() for a in sys.argv[1:]}
 
-    _, _, policy = call("GET", f"{base}/policy")
+    policy_status, _, policy = call("GET", f"{base}/policy")
+    if policy_status != 200 or not isinstance(policy, dict) or not isinstance(policy.get("summary"), dict):
+        sys.exit("Current BRANE policy could not be verified. No fixture completions attempted.")
     summary = policy.get("summary", {}) if isinstance(policy, dict) else {}
     version = (f"{os.environ.get('TEAM_BUILD', 'unknown team')} | model {model} | policy "
                f"allow={summary.get('allow')} placeholder={summary.get('placeholder')} "
@@ -265,6 +307,8 @@ def main():
                                     indent=2, ensure_ascii=False), encoding="utf-8")
     passed = sum(r["verdict"] == "PASS" for r in results)
     print(f"\n{passed}/{len(results)} passed (preliminary). Wrote {csv_path.relative_to(ROOT)} and {json_path.relative_to(ROOT)}")
+    if passed != len(results) or not results:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

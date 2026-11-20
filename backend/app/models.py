@@ -36,6 +36,11 @@ class Decision(Strict):
     count: int | None = Field(ge=0)
 
 
+class DraftQuestions(Strict):
+    missing: list[Literal["what", "when", "where", "who", "evidence"]]
+    follow_up: list[str]
+
+
 class Brief(Strict):
     facts: list[str]
     timeline: list[str]

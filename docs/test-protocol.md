@@ -1,6 +1,6 @@
 # Test protocol: security gate T1–T5 plus edge cases E1–E5
 
-Owner: Person C. Expected decisions come from Person A's [policy matrix](policy-matrix.md). Hand-in file: `MAIN_Five_Tests_Template.csv` (see `docs/reference/`).
+Owner: Person C. Expected decisions come from Person A's [policy matrix](policy-matrix.md). The [hand-in CSV](../submission/MAIN_Five_Tests_Template.csv) contains the team's reviewed historical results and outstanding sign-offs.
 
 ## How to run
 ```bash
@@ -9,16 +9,18 @@ python3 tests/run_security_tests.py          # all cases
 python3 tests/run_security_tests.py T2 E4    # selected cases
 ```
 The script uses only the Python standard library (3.9+). For each synthetic case in [`data/synthetic_reports.json`](../data/synthetic_reports.json) it:
-1. Calls `POST /policy/test` to record BRANE's detections and the **exact payload the cloud model would receive**.
-2. Calls `POST /chat/completions` (model `openrouter:openai/gpt-6-luna`, the approved OpenAI route, which can be changed with `BRANE_MODEL`) and records the `X-Brane-*` headers and the agent's draft case brief.
+1. Calls `POST /policy/test` to record BRANE's detections and proposed outbound text for the synthetic user message.
+2. After an acceptable preview, calls `POST /chat/completions` through BRANE and records the `X-Brane-*` headers and draft. Use the approved `openrouter:openai/gpt-6-luna` model for judging evidence.
 3. **Fails** the case if any `must_not_egress` string appears in the cloud payload, or if the route is not one of the case's `allowed_outcomes`. Separately, it flags `must_keep` details that protection removed, which is the usefulness check the jury asks about.
 
 Output: `evidence/run_<timestamp>.csv` uses the template's columns, and `evidence/run_<timestamp>.json` holds the full trace. The API key is never written to either file. **Verdicts are preliminary.** Someone must read every row before it goes into the hand-in CSV.
 
+The direct gateway runner now withholds completion when the preview fails, lacks an inspectable cloud payload, exposes a prohibited fixture string or proposes cloud processing for a local-only fixture. For cloud passes it also checks the response status, redaction flag, governed lane and resolved model. A failed row produces a nonzero process exit after the evidence files are written. The workbench preview is evidence of proposed egress, not a capture of the provider's actual network traffic. The archived CSVs predate these checks. Run the verdict regression tests offline with `python -m pytest tests/test_security_evidence.py` from the repository root.
+
 Give each policy change a new `TEAM_BUILD` value (for example `Group Čulo / policy-v2`). Every row records the policy version and BRANE's category counts.
 
 ## Two levels of testing
-The matrix is stricter than what BRANE alone can prove. This runner tests the **BRANE level**: what reaches the cloud model. The matrix also requires application-level controls, which must be retested against the backend once it exists:
+This runner observes the **direct BRANE route** using synthetic source text. The application sends a much smaller, locally constructed prompt. Exercise the application separately using the [backend tests and HTTP smoke](../backend/README.md), then collect a fresh approved-tenant run with `tests/run_backend_evidence.py`.
 - P3 material is stripped locally and **never reaches hosted BRANE**. BRANE's `local` route still sends the input to BRANE's hosted service.
 - P4 is blocked in the application before any model call. BRANE is only the second check.
 - P5: if the gateway is unavailable, the backend makes zero model calls and sends no success webhook to n8n.
@@ -96,7 +98,7 @@ So BRANE is the second line of defence, not the first. Live backend check on the
 - P3a → 422 `local_review_required`
 - the backend's live adapter tests pass (2/2)
 
-These go in the policy matrix's "product gap" column. The runner's leak check is a substring match, so altered spoken digits (E5) and token consistency (T3) need the manual review above.
+These go in the policy matrix's "product gap" column. The revised runner checks a single repeated BRANE person token at all expected mentions in T3 and E2 and checks identifying spoken fragments in E5. Replaying the archived previews flags all three before a completion. Other token formats, altered spellings and loss of meaning still require human review.
 
 ### Findings to take to the AI-Z desk
 1. **The live headers say `X-Brane-Pii-Detected: false` for every request under the open policy,** even when `/policy/test` detects PERSON, EMAIL, PHONE and HEALTH_DATA in the same text. We tested four message layouts (user only, system then user, user then system, merged), and all four gave the same result. The likely cause is that detection is skipped when everything is `allow`. **Re-check after the policy is set.** If live calls still don't detect, that is a bypass.

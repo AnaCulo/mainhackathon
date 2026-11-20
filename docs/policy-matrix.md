@@ -1,6 +1,6 @@
 # Whistleblower intake policy matrix
 
-**Person B handoff · 20 November 2026 · synthetic fixtures only.** Apply these rules to both `POST /reports` and every turn, including history, of `POST /v1/chat/completions`. The [team plan](../TEAM_PLAN.md) defines the policy IDs. Its example Case JSON is provisional. The checkout has no separate API contract, deployed policy export or runtime test evidence.
+**Person B handoff · 20 November 2026 · synthetic fixtures only.** Apply these rules to both `POST /reports` and every turn, including history, of `POST /v1/chat/completions`. The [team plan](../TEAM_PLAN.md) defines the policy IDs. Use the [implemented API contract](backend-api.md), [tenant policy export](../brane/team-policy.json) and [recorded runs](../evidence/) alongside the matrix.
 
 ## How to use the matrix
 
@@ -71,4 +71,4 @@ Recording is optional as a means of documentation. Before recording begins obtai
 
 ## Integration audit pending
 
-At the Saturday audit, inspect the real contract, audio path, BRANE tenant policies, egress and n8n execution storage. Run all five fixtures in the [team plan](../TEAM_PLAN.md) against the actual entry points. Compare the screened model-bound payload and egress counts against these expectations, inspect n8n/notification payloads, and test P6 refusal and retry behaviour. Record observed versus expected results and policy versions. At this review there is no implementation or test record in the checkout from which to award a pass.
+At the Saturday audit, inspect the real contract, audio path, BRANE tenant policies, egress and n8n execution storage. Run all five fixtures in the [team plan](../TEAM_PLAN.md) against the actual entry points. Compare the screened model-bound payload and egress counts against these expectations, inspect n8n/notification payloads, and test P6 refusal and retry behaviour. Record observed versus expected results and policy versions. The [test protocol](test-protocol.md) identifies historical hosted results and application checks to repeat for the release candidate.

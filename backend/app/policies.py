@@ -47,13 +47,69 @@ class Screened:
     mappings: list[tuple[str, str, str]]
 
 
-def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
+def specific_observations(text):
+    """Release fixed descriptions only when a complete statement supports them."""
+    found = []
+    approval = re.compile(
+        r"\x00(PERSON_\d+)\x00(?:, (?:my|our|the) (?:team lead|manager|head of procurement),)? "
+        r"(?:(?:allegedly )?approved (?:a|the) purchase(?: of \d+ (?:laptops|items|units))?"
+        r"|has been approving (purchase orders)(?: (?:above|over) [\d,.]+ euros)?) "
+        r"without (?:the )?required second sign-off", re.IGNORECASE
+    )
+    wording = {
+        "i saw ": "The reporter says they observed",
+        "i was told ": "The reporter says they were told about",
+        "i suspect ": "The reporter suspects",
+    }
+    for part in re.split(r"(?<=[.!?])\s+|\n+", text):
+        sentence = part.strip().rstrip(".!")
+        if match := approval.fullmatch(sentence):
+            actor = match[1]
+            item = "purchase orders" if match[2] else "a purchase"
+            found.append(("other", f"{actor} allegedly approved {item} without the required second sign-off."))
+            continue
+        # Capture how the reporter knows this. Render only enumerated output,
+        # including when the reporter expresses doubt or attributes it to others.
+        statement = sentence.casefold()
+        prefix = next((p for p in wording if statement.startswith(p)), "")
+        statement = statement.removeprefix(prefix)
+        if prefix:
+            statement = statement.removeprefix("that ")
+        if re.fullmatch(r"(?:two |the )?invoice totals (?:differ|differed)", statement):
+            intro = wording.get(prefix, "The report describes")
+            found.append(("fraud", f"{intro} a discrepancy between invoice totals."))
+        if re.fullmatch(
+            r"(?:since \w+, )?(?:(?:a|the|the same) )?(?:supplier )?invoices?"
+            r"(?: from (?:one|the same|a) (?:\w+ ){0,2}supplier)? "
+            r"(?:was|were|has been|have been) (?:entered|booked|recorded) twice"
+            r"(?:: the same invoice number appears in the ledger once .+ and again .+)?",
+            statement,
+        ):
+            intro = wording.get(prefix, "The report describes")
+            found.append(("fraud", f"{intro} duplicate recording of an invoice."))
+        obstruction = re.fullmatch(
+            r"(?:a |an |the )?(?:warehouse )?(emergency exit|fire exit|walkway|stairway) "
+            r"(?:was|is) (blocked|obstructed)(?: (?:by|with) (boxes|pallets|equipment))?",
+            statement,
+        )
+        if obstruction:
+            place, condition, material = obstruction.groups()
+            article = "an" if place == "emergency exit" else "a"
+            description = f"{article} {place} {condition}"
+            if material:
+                description += f" by {material}"
+            intro = wording.get(prefix, "The reporter describes")
+            found.append(("safety", f"{intro} {description}."))
+    return found
+
+
+def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> Screened:
     """Construct a new document exclusively from a closed vocabulary.
 
     Name recognition improves local indexing. It never authorizes a span of
     original narrative for export. Case-scoped aliases can be supplied in any script.
     """
-    text = unicodedata.normalize("NFKC", text)
+    text = unicodedata.normalize("NFKC", text).replace("\x00", " ")
     lowered = " ".join(text.casefold().split())
     if any(re.search(pattern, lowered) for pattern in RULES["instruction_patterns"]):
         raise Stop(422, "instruction_quarantined", "P4")
@@ -134,63 +190,47 @@ def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
                 mentions.append(token)
         # Never classify words inside an identified name as evidence.
         text = re.sub(
-            r"(?<!\w)(?:" + pattern + r")(?!\w)", " ", text, flags=re.IGNORECASE
+            r"(?<!\w)(?:" + pattern + r")(?!\w)",
+            lambda m: "\x00" + bindings[m[0].casefold()][0] + "\x00",
+            text, flags=re.IGNORECASE,
         )
     topics = [
         (cat, summary)
         for cat, pattern, summary in RULES["topics"]
         if re.search(r"\b(?:" + pattern + r")\b", text, re.IGNORECASE)
     ]
-    obstruction = re.fullmatch(
-        r"(?:a |an |the )?(?:warehouse )?(emergency exit|fire exit|walkway|stairway) "
-        r"(?:was|is) (blocked|obstructed)(?: (?:by|with) (boxes|pallets|equipment))?[.!]?",
-        text.strip(),
-        re.IGNORECASE,
-    )
-    # Ordinary policy breach linked to exactly one accused person (matrix P2/P5 row):
-    # the token plus a fixed sentence may leave; criminal wording is caught earlier by P3.
-    accused = list(dict.fromkeys(mentions))
-    if len(accused) == 1:
-        for cat, pattern, template in RULES.get("person_observations", []):
-            if re.search(pattern, text, re.IGNORECASE | re.DOTALL):
-                topics.insert(0, (cat, template.format(person=accused[0])))
-    if obstruction:
-        place, condition, material = (
-            v.lower() if v else None for v in obstruction.groups()
-        )
-        article = "an" if place == "emergency exit" else "a"
-        description = f"{article} {place} {condition}"
-        if material:
-            description += f" by {material}"
-        topics.insert(0, ("safety", f"The reporter describes {description}."))
-    if not topics and not voice:
+    specific = specific_observations(text)
+    described = {category for category, _ in specific}
+    topics = specific + [item for item in topics if item[0] not in described]
+    if not topics and not allow_incomplete:
         raise Stop(422, "local_review_required", "P5")
     category, summary = (
         topics[0]
         if topics
         else ("other", "A workplace report was received for human review.")
     )
+    # A denied or hypothetical detail cannot fill an intake gap. Restrict
+    # certainty to the sentence in which the detail appears.
+    details = [
+        part for part in re.split(r"[.!?\n]+", text)
+        if not re.search(
+            r"\b(?:no|not|never|without|unsure|uncertain|maybe|possibly|if|might|could|or)\b|n['’]t\b",
+            part, re.IGNORECASE
+        )
+    ]
+    detail_text = "\n".join(details)
     location = (
         "warehouse"
-        if re.search(r"\b(in|at|a) (the |a )?warehouse\b", text, re.IGNORECASE)
+        if re.search(r"\b(in|at|a) (the |a )?warehouse\b", detail_text, re.IGNORECASE)
         else UNKNOWN
     )
-    time_hint = next(
-        (
-            v
-            for v in ("yesterday", "last week", "last month")
-            if re.search(r"\b" + v + r"\b", text, re.IGNORECASE)
-        ),
-        UNKNOWN,
-    )
-    if time_hint == UNKNOWN:
-        day = re.search(
-            r"\b(?:on|last|this) (monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
-            text,
-            re.IGNORECASE,
-        )
-        if day:
-            time_hint = day[1].capitalize()
+    times = set(re.findall(r"\b(?:yesterday|last week|last month)\b", detail_text.casefold()))
+    weekdays = r"monday|tuesday|wednesday|thursday|friday|saturday|sunday"
+    for part in details:
+        # Also accept a short answer to the voice question, e.g. "Monday."
+        for day in re.findall(rf"(?:\b(?:on|last|this) |^\s*)({weekdays})\b", part.casefold()):
+            times.add(day.capitalize())
+    time_hint = times.pop() if len(times) == 1 else UNKNOWN
     evidence = [
         label
         for pattern, label in [
@@ -200,7 +240,7 @@ def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
             (r"\bpurchase orders?\b", "purchase orders"),
             (r"\binspection log\b", "inspection log"),
         ]
-        if re.search(pattern, text, re.IGNORECASE)
+        if re.search(pattern, detail_text, re.IGNORECASE)
     ]
     missing = [
         key
@@ -208,7 +248,10 @@ def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
             ("what", topics),
             ("when", time_hint != UNKNOWN),
             ("where", location != UNKNOWN),
-            ("who", mentions),
+            ("who", mentions or re.search(
+                r"\b(?:my|our|the|a) (?:team lead|shift lead|supervisor|manager|colleague|witness)\b",
+                detail_text, re.IGNORECASE
+            )),
             ("evidence", evidence),
         )
         if not present

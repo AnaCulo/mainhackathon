@@ -45,6 +45,7 @@
     },
     {
       "id": "T3",
+      "same_person_mentions": 5,
       "scenario": "Mandatory · Repeated details",
       "policy": "P2 PROTECT (repeated details), then P5 ALLOW (ordinary policy breach)",
       "title": "Ordinary policy breach, accused named five times across report and evidence",
@@ -170,6 +171,7 @@
     },
     {
       "id": "E2",
+      "same_person_mentions": 3,
       "scenario": "Team Edge Case · Real-world grey zone",
       "policy": "P2 PROTECT (aliases)",
       "title": "One witness referred to by two names",
@@ -243,6 +245,8 @@
       "must_not_egress": [
         "Ruud van Leeuwen-Proefdata",
         "R U U D",
+        "oh six one two three four",
+        "six seven eight",
         "oh six one two three four five six seven eight"
       ],
       "must_keep": [

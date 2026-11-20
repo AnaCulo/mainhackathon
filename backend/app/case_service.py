@@ -16,7 +16,7 @@ def brief_for(extraction):
         if extraction.approximate_time == "unknown"
         else [f"Reported time: {extraction.approximate_time}."]
     )
-    evidence = [f"{label[0].upper()}{label[1:]} (original held locally)." for label in extraction.evidence]
+    evidence = [f"{label.capitalize()} mentioned by reporter (unverified)." for label in extraction.evidence]
     return Brief(facts=facts, timeline=timeline, evidence=evidence)
 
 
