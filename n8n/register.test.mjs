@@ -1,0 +1,62 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtempSync} from 'node:fs';
+import {join} from 'node:path';
+import {tmpdir} from 'node:os';
+import {clocks,plusMonths} from './calendar.mjs';
+import {Register} from './register.mjs';
+import {service} from './service.mjs';
+
+const received='2026-11-20T12:00:00.000Z';
+const sample={case_id:'WB-0007',reporter:'REPORTER_01',category:'other',summary:'Two totals differ.',persons:[],received_at:received,brane_status:'ok',decisions:[{policy:'P5',action:'ALLOW',count:1},{policy:'P6',action:'HUMAN',count:1}]};
+test('Amsterdam days, DST, leap/month end, weekends and public holidays',()=>{
+  const d=clocks(received,null,null,Date.parse('2026-11-28T00:00:00Z'));
+  assert.deepEqual([d.ackDue,d.feedbackDue,d.feedbackTarget,d.ackMissed],['2026-11-27','2027-02-27','2027-02-26',true]);
+  assert.equal(clocks(received,'2026-11-23T23:15:00Z',null,Date.now()).feedbackDue,'2027-02-24');
+  assert.equal(clocks('2026-03-28T23:30:00Z',null,null,Date.now()).ackDue,'2026-04-05');
+  assert.equal(clocks('2026-12-18T08:00:00Z',null,null,Date.now()).ackTarget,'2026-12-24');
+  assert.equal(plusMonths('2023-11-30',3),'2024-02-29');
+  assert.equal(plusMonths('2024-11-30',3),'2025-02-28');
+});
+test('outbox failure is isolated and recoverable, late dispatch preserves missed history',()=>{
+  let now=Date.parse(received);
+  const r=new Register(':memory:',{now:()=>now,demo:true});r.accept(sample,sample.case_id);
+  r.db.exec("CREATE TRIGGER capture_off BEFORE INSERT ON inbox WHEN new.kind='notify' BEGIN SELECT RAISE(ABORT,'offline'); END;");
+  r.tick();
+  const state=k=>r.effects(sample.case_id).find(e=>e.kind===k)?.state;
+  assert.equal(state('notify'),'failed');assert.equal(state('ack'),'unreachable');
+  r.db.exec('DROP TRIGGER capture_off');r.reconcile(sample.case_id,'notify','pending');
+  now+=121000;r.tick();assert.equal(state('feedback-demo-reminder'),'sent');
+  assert.equal(state('notify'),'sent');assert.equal(r.get(sample.case_id).decision,null);
+  const before=JSON.parse(r.get(sample.case_id).clocks);
+  assert.equal(before.feedbackDue,'2027-02-27');
+  now=Date.parse('2027-03-02T09:00:00Z');r.tick();r.route(sample.case_id);r.tick();
+  const late=JSON.parse(r.get(sample.case_id).clocks);
+  assert.equal(late.ackMissed,true);assert.equal(late.feedbackMissed,true);assert.equal(late.feedbackDue,'2027-06-02');
+  assert.equal(r.db.prepare("SELECT count(*) n FROM inbox WHERE kind='feedback-demo-reminder'").get().n,1);
+});
+test('uncertain external write is held across restart and duplicate',async()=>{
+  const path=join(mkdtempSync(join(tmpdir(),'culo-restart-')),'register.sqlite');
+  let r=new Register(path,{table:true});r.accept(sample,sample.case_id);
+  const c=r.get(sample.case_id);let calls=0;
+  await r.mirror(async()=>{calls++;throw Error('lost response');});r.db.close();
+  r=new Register(path,{table:true,demo:true});assert.equal(r.accept(sample,sample.case_id),200);
+  await r.mirror(async()=>{calls++;return 'sent';});r.tick();
+  assert.equal(calls,1);assert.equal(r.get(sample.case_id).task,c.task);
+  assert.equal(r.get(sample.case_id).demo,0);assert.ok(!r.effects(sample.case_id).some(e=>e.kind.includes('demo')));
+  assert.equal(r.effects(sample.case_id).find(e=>e.kind==='table').state,'uncertain');
+  r.reconcile(sample.case_id,'table','sent');r.db.close();
+});
+test('expiry leaves the task pending and an authorised handler can open a fresh form',async t=>{
+  let now=Date.parse(received);const r=new Register(':memory:',{now:()=>now});r.accept(sample,sample.case_id);
+  const password='temporary-handlertest',basic='Basic '+Buffer.from('handler:'+password).toString('base64');
+  const s=service(r,{password,secret:'temporary-worker-test',wire:'temporary-intake-test'});
+  await new Promise(ok=>s.listen(0,'127.0.0.1',ok));t.after(()=>s.close());
+  const url='http://127.0.0.1:'+s.address().port+'/review/WB-0007';
+  const html=await (await fetch(url,{headers:{authorization:basic}})).text();
+  const f=new URLSearchParams({action:'investigate',reason:'Compare the entries.',clear:'yes'});
+  for(const k of ['ticket','expires','task'])f.set(k,html.match(new RegExp('name="'+k+'" value="([^"]+)"'))[1]);
+  now+=16*60000;
+  assert.equal((await fetch(url,{method:'POST',headers:{authorization:basic},body:f})).status,403);assert.equal(r.get(sample.case_id).decision,null);
+  assert.notEqual(await (await fetch(url,{headers:{authorization:basic}})).text(),html);
+});
