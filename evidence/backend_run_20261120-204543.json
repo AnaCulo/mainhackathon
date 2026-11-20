@@ -1,0 +1,530 @@
+{
+  "backend": "http://127.0.0.1:8000",
+  "policy_sha256": "e32261674b2ef8ced8b000da97bcdb0f2bb83683115e70830ba2e45ce868ca23",
+  "results": [
+    {
+      "id": "T1",
+      "http_status": 200,
+      "response": {
+        "case_id": "WB-1d33d6e2543244e2aab3fe30862b4bc9",
+        "reporter": "REPORTER_01",
+        "category": "other",
+        "summary": "The report discusses whether invoices were recorded more than once.",
+        "persons": [],
+        "received_at": "2026-11-20T19:45:15.232780Z",
+        "decisions": [
+          {
+            "policy": "P5",
+            "action": "ALLOW",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "brane_status": "ok",
+        "brief": {
+          "facts": [
+            "The report discusses whether invoices were recorded more than once."
+          ],
+          "timeline": [],
+          "evidence": []
+        }
+      },
+      "x_request_id": "35e4ca95-547c-47d4-bf92-206e68e7e918",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "HUMAN_ONLY",
+          "policy_id": "P6",
+          "count": null
+        },
+        {
+          "action": "case_created",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": null,
+      "completion_attempted": true,
+      "outbound_text_to_brane": "Prepare a concise draft for human review. All facts are reports, not verified findings. Choose the primary concern and rank one to three nonredundant facts. Lead with an event or topic. Include relevant supporting evidence when space permits. Interpret after only as explicit sequence, never causation. Use the first fact's category. Choose one or two useful questions, or an empty array if none are available, from open_questions. Prioritise evidence if event and timing are known but evidence is missing. Output exactly one JSON object with category, selected_fact_ids and follow_up_question_ids (the latter two are arrays of IDs). Do not include prose, findings or new values.\n\n{\"facts\": [{\"category\": \"other\", \"fact_id\": \"F001\", \"kind\": \"topic\", \"topic\": \"duplicate_invoicing\"}], \"open_questions\": [\"when\", \"where\", \"participants\", \"evidence\"]}",
+      "brane_completion_headers": {
+        "X-Brane-Routed-To": "cloud",
+        "X-Brane-Action": "allow",
+        "X-Brane-Redacted": "false",
+        "X-Brane-Pii-Detected": "false",
+        "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+        "X-Brane-Lane": "governed"
+      }
+    },
+    {
+      "id": "T2",
+      "http_status": 422,
+      "response": {
+        "error": "local_review_required",
+        "request_id": "390e2844-9f60-428a-9551-32964dd1947f"
+      },
+      "x_request_id": "390e2844-9f60-428a-9551-32964dd1947f",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P1",
+          "count": 1
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": "local_review_required",
+      "completion_attempted": false,
+      "outbound_text_to_brane": null,
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "T3",
+      "http_status": 200,
+      "response": {
+        "case_id": "WB-6dddfab8bb8647fa8cafbb46322422da",
+        "reporter": "REPORTER_01",
+        "category": "other",
+        "summary": "PERSON_01 allegedly approved purchase orders without the required second sign-off.",
+        "persons": [
+          "PERSON_01"
+        ],
+        "received_at": "2026-11-20T19:45:21.309157Z",
+        "decisions": [
+          {
+            "policy": "P2",
+            "action": "PROTECT",
+            "count": 5
+          },
+          {
+            "policy": "P5",
+            "action": "ALLOW",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "brane_status": "ok",
+        "brief": {
+          "facts": [
+            "PERSON_01 allegedly approved purchase orders without the required second sign-off."
+          ],
+          "timeline": [],
+          "evidence": []
+        }
+      },
+      "x_request_id": "96c6fe8a-a8f0-475b-af41-55ae873031b9",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P2",
+          "count": 5
+        },
+        {
+          "action": "HUMAN_ONLY",
+          "policy_id": "P6",
+          "count": null
+        },
+        {
+          "action": "case_created",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": null,
+      "completion_attempted": true,
+      "outbound_text_to_brane": "Prepare a concise draft for human review. All facts are reports, not verified findings. Choose the primary concern and rank one to three nonredundant facts. Lead with an event or topic. Include relevant supporting evidence when space permits. Interpret after only as explicit sequence, never causation. Use the first fact's category. Choose one or two useful questions, or an empty array if none are available, from open_questions. Prioritise evidence if event and timing are known but evidence is missing. Output exactly one JSON object with category, selected_fact_ids and follow_up_question_ids (the latter two are arrays of IDs). Do not include prose, findings or new values.\n\n{\"facts\": [{\"category\": \"other\", \"fact_id\": \"F001\", \"kind\": \"purchase_without_signoff\", \"subject\": \"#P01\"}], \"open_questions\": [\"when\", \"where\", \"evidence\"]}",
+      "brane_completion_headers": {
+        "X-Brane-Routed-To": "cloud",
+        "X-Brane-Action": "allow",
+        "X-Brane-Redacted": "false",
+        "X-Brane-Pii-Detected": "false",
+        "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+        "X-Brane-Lane": "governed"
+      }
+    },
+    {
+      "id": "T4",
+      "http_status": 422,
+      "response": {
+        "error": "instruction_quarantined",
+        "request_id": "e046395d-9946-4d9a-8fe2-aa0244ea88a4"
+      },
+      "x_request_id": "e046395d-9946-4d9a-8fe2-aa0244ea88a4",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P4",
+          "count": null
+        }
+      ],
+      "block_reason": "instruction_quarantined",
+      "completion_attempted": false,
+      "outbound_text_to_brane": null,
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "T5",
+      "http_status": 422,
+      "response": {
+        "error": "restricted_material",
+        "request_id": "8e4852b1-d449-4e25-8d94-ca585f598553"
+      },
+      "x_request_id": "8e4852b1-d449-4e25-8d94-ca585f598553",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "LOCAL_ONLY",
+          "policy_id": "P3",
+          "count": null
+        }
+      ],
+      "block_reason": "restricted_material",
+      "completion_attempted": false,
+      "outbound_text_to_brane": null,
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "P3a",
+      "http_status": 200,
+      "response": {
+        "case_id": "WB-9849c7fddabf4f479a0b8d715bc5a2a2",
+        "reporter": "REPORTER_01",
+        "category": "other",
+        "summary": "PERSON_01 allegedly approved a purchase without the required second sign-off.",
+        "persons": [
+          "PERSON_01"
+        ],
+        "received_at": "2026-11-20T19:45:27.223999Z",
+        "decisions": [
+          {
+            "policy": "P2",
+            "action": "PROTECT",
+            "count": 1
+          },
+          {
+            "policy": "P5",
+            "action": "ALLOW",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "brane_status": "ok",
+        "brief": {
+          "facts": [
+            "PERSON_01 allegedly approved a purchase without the required second sign-off."
+          ],
+          "timeline": [],
+          "evidence": []
+        }
+      },
+      "x_request_id": "ead63eed-8429-490b-b806-d5eeed48ab98",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P2",
+          "count": 1
+        },
+        {
+          "action": "HUMAN_ONLY",
+          "policy_id": "P6",
+          "count": null
+        },
+        {
+          "action": "case_created",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": null,
+      "completion_attempted": true,
+      "outbound_text_to_brane": "Prepare a concise draft for human review. All facts are reports, not verified findings. Choose the primary concern and rank one to three nonredundant facts. Lead with an event or topic. Include relevant supporting evidence when space permits. Interpret after only as explicit sequence, never causation. Use the first fact's category. Choose one or two useful questions, or an empty array if none are available, from open_questions. Prioritise evidence if event and timing are known but evidence is missing. Output exactly one JSON object with category, selected_fact_ids and follow_up_question_ids (the latter two are arrays of IDs). Do not include prose, findings or new values.\n\n{\"facts\": [{\"category\": \"other\", \"fact_id\": \"F001\", \"kind\": \"purchase_without_signoff\", \"subject\": \"#P01\"}], \"open_questions\": [\"when\", \"where\", \"evidence\"]}",
+      "brane_completion_headers": {
+        "X-Brane-Routed-To": "cloud",
+        "X-Brane-Action": "allow",
+        "X-Brane-Redacted": "false",
+        "X-Brane-Pii-Detected": "false",
+        "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+        "X-Brane-Lane": "governed"
+      }
+    },
+    {
+      "id": "P3b",
+      "http_status": 422,
+      "response": {
+        "error": "restricted_material",
+        "request_id": "a4d4be70-8d71-4854-86d3-78f3f982c4d8"
+      },
+      "x_request_id": "a4d4be70-8d71-4854-86d3-78f3f982c4d8",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "LOCAL_ONLY",
+          "policy_id": "P3",
+          "count": null
+        }
+      ],
+      "block_reason": "restricted_material",
+      "completion_attempted": false,
+      "outbound_text_to_brane": null,
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "E1",
+      "http_status": 422,
+      "response": {
+        "error": "identifying_context",
+        "request_id": "7fe11055-315a-4dca-a708-ee8d7e83b929"
+      },
+      "x_request_id": "7fe11055-315a-4dca-a708-ee8d7e83b929",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P1",
+          "count": null
+        }
+      ],
+      "block_reason": "identifying_context",
+      "completion_attempted": false,
+      "outbound_text_to_brane": null,
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "E2",
+      "http_status": 422,
+      "response": {
+        "error": "local_review_required",
+        "request_id": "3e27e1c7-bc90-4efa-84cf-7da5c48c3877"
+      },
+      "x_request_id": "3e27e1c7-bc90-4efa-84cf-7da5c48c3877",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": "local_review_required",
+      "completion_attempted": false,
+      "outbound_text_to_brane": null,
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "E3",
+      "http_status": 422,
+      "response": {
+        "error": "restricted_material",
+        "request_id": "d6fe0cb8-e134-48db-ac47-760180232555"
+      },
+      "x_request_id": "d6fe0cb8-e134-48db-ac47-760180232555",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "LOCAL_ONLY",
+          "policy_id": "P3",
+          "count": null
+        }
+      ],
+      "block_reason": "restricted_material",
+      "completion_attempted": false,
+      "outbound_text_to_brane": null,
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "E4",
+      "http_status": 200,
+      "response": {
+        "case_id": "WB-dc45054b354d4f8f9da778c22545b817",
+        "reporter": "REPORTER_01",
+        "category": "other",
+        "summary": "The report mentions a concern about invoicing or financial records.",
+        "persons": [],
+        "received_at": "2026-11-20T19:45:33.001808Z",
+        "decisions": [
+          {
+            "policy": "P5",
+            "action": "ALLOW",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "brane_status": "ok",
+        "brief": {
+          "facts": [
+            "The report mentions a concern about invoicing or financial records."
+          ],
+          "timeline": [],
+          "evidence": []
+        }
+      },
+      "x_request_id": "fa6dbd04-a9c4-4a99-a168-f7ee973ab7e2",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "HUMAN_ONLY",
+          "policy_id": "P6",
+          "count": null
+        },
+        {
+          "action": "case_created",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": null,
+      "completion_attempted": true,
+      "outbound_text_to_brane": "Prepare a concise draft for human review. All facts are reports, not verified findings. Choose the primary concern and rank one to three nonredundant facts. Lead with an event or topic. Include relevant supporting evidence when space permits. Interpret after only as explicit sequence, never causation. Use the first fact's category. Choose one or two useful questions, or an empty array if none are available, from open_questions. Prioritise evidence if event and timing are known but evidence is missing. Output exactly one JSON object with category, selected_fact_ids and follow_up_question_ids (the latter two are arrays of IDs). Do not include prose, findings or new values.\n\n{\"facts\": [{\"category\": \"other\", \"fact_id\": \"F001\", \"kind\": \"topic\", \"topic\": \"invoicing\"}], \"open_questions\": [\"when\", \"where\", \"participants\", \"evidence\"]}",
+      "brane_completion_headers": {
+        "X-Brane-Routed-To": "cloud",
+        "X-Brane-Action": "allow",
+        "X-Brane-Redacted": "false",
+        "X-Brane-Pii-Detected": "false",
+        "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+        "X-Brane-Lane": "governed"
+      }
+    },
+    {
+      "id": "E5",
+      "http_status": 200,
+      "response": {
+        "case_id": "WB-0dcf1eab0d584ab3800fc153b664d349",
+        "reporter": "REPORTER_01",
+        "category": "safety",
+        "summary": "The report mentions a workplace safety concern.",
+        "persons": [],
+        "received_at": "2026-11-20T19:45:38.390706Z",
+        "decisions": [
+          {
+            "policy": "P5",
+            "action": "ALLOW",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "brane_status": "ok",
+        "brief": {
+          "facts": [
+            "The report mentions a workplace safety concern."
+          ],
+          "timeline": [],
+          "evidence": []
+        }
+      },
+      "x_request_id": "948ae200-ada0-4527-a718-8d588efcbfbd",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "HUMAN_ONLY",
+          "policy_id": "P6",
+          "count": null
+        },
+        {
+          "action": "case_created",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": null,
+      "completion_attempted": true,
+      "outbound_text_to_brane": "Prepare a concise draft for human review. All facts are reports, not verified findings. Choose the primary concern and rank one to three nonredundant facts. Lead with an event or topic. Include relevant supporting evidence when space permits. Interpret after only as explicit sequence, never causation. Use the first fact's category. Choose one or two useful questions, or an empty array if none are available, from open_questions. Prioritise evidence if event and timing are known but evidence is missing. Output exactly one JSON object with category, selected_fact_ids and follow_up_question_ids (the latter two are arrays of IDs). Do not include prose, findings or new values.\n\n{\"facts\": [{\"category\": \"safety\", \"fact_id\": \"F001\", \"kind\": \"topic\", \"topic\": \"safety\"}], \"open_questions\": [\"when\", \"where\", \"participants\", \"evidence\"]}",
+      "brane_completion_headers": {
+        "X-Brane-Routed-To": "cloud",
+        "X-Brane-Action": "allow",
+        "X-Brane-Redacted": "false",
+        "X-Brane-Pii-Detected": "false",
+        "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+        "X-Brane-Lane": "governed"
+      }
+    }
+  ]
+}

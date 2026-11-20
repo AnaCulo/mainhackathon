@@ -100,6 +100,21 @@ So BRANE is the second line of defence, not the first. Live backend check on the
 
 These go in the policy matrix's "product gap" column. The revised runner checks a single repeated BRANE person token at all expected mentions in T3 and E2 and checks identifying spoken fragments in E5. Replaying the archived previews flags all three before a completion. Other token formats, altered spellings and loss of meaning still require human review.
 
+### Run 3: backend with fact synthesis (20 Nov, 20:45), `evidence/backend_run_20261120-204543.json`
+This is the teammates' fact-synthesis backend at `81fe514`, after the live fix that renamed the outbound key `question_ids` to `open_questions` (BRANE flagged `question_ids` as a PERSON).
+
+| Result | Cases |
+|---|---|
+| Cases created | T1, T3, P3a, E4, E5 |
+| Held locally | T2, T4, T5, P3b, E2, E3, **E1** |
+
+What changed from Run 2:
+- **E1** is now held as `identifying_context` (P1), which is stricter than the earlier generalised release.
+- **T1's** draft names the topic ("whether invoices were recorded more than once").
+- **T3's** outbound text is a single fact with `#P01`.
+
+The submission CSVs cite this run.
+
 ### Findings to take to the AI-Z desk
 1. **The live headers say `X-Brane-Pii-Detected: false` for every request under the open policy,** even when `/policy/test` detects PERSON, EMAIL, PHONE and HEALTH_DATA in the same text. We tested four message layouts (user only, system then user, user then system, merged), and all four gave the same result. The likely cause is that detection is skipped when everything is `allow`. **Re-check after the policy is set.** If live calls still don't detect, that is a bypass.
 2. **For T4, the preview and the live call disagree.** `/policy/test` flagged the prompt injection (prompt-guard score 0.99998) and previewed route `local`. The live `/chat/completions` call with the same text went to `cloud` with action `allow`. P4 needs a block (HTTP 422). Ask whether prompt-guard is enforced on live calls, and how to make it refuse rather than route locally.
