@@ -143,6 +143,9 @@ def run():
             print("Offline walkthrough with simulated BRANE.", flush=True)
             cmd = [node, "n8n/walkthrough.mjs"] + (["--hold"] if args.hold else [])
             subprocess.run(cmd, env=local_env | demo, cwd=ROOT, check=True)
+            if args.hold:
+                case = json.loads((config.parent / "walkthrough.json").read_text(encoding="utf-8"))
+                print(f"Open the pending decision: {case['reviewUrl']}", flush=True)
             if args.offline_python_backend:
                 subprocess.run([sys.executable, "n8n/verify-python.py", args.offline_python_backend,
                                 str(config)], env=local_env, cwd=ROOT, check=True)

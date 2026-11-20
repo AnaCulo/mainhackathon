@@ -1,8 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync} from 'node:fs';
+import {spawn} from 'node:child_process';
+import {once} from 'node:events';
+import {mkdtempSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
+import {createInterface} from 'node:readline';
+import {fileURLToPath} from 'node:url';
 import {clocks,plusMonths} from './calendar.mjs';
 import {Register} from './register.mjs';
 import {service} from './service.mjs';
@@ -59,4 +63,60 @@ test('expiry leaves the task pending and an authorised handler can open a fresh 
   now+=16*60000;
   assert.equal((await fetch(url,{method:'POST',headers:{authorization:basic},body:f})).status,403);assert.equal(r.get(sample.case_id).decision,null);
   assert.notEqual(await (await fetch(url,{headers:{authorization:basic}})).text(),html);
+});
+
+test('a saved case opens a live decision form and keeps the decision after refresh', {timeout:15000}, async t=>{
+  const dir=mkdtempSync(join(tmpdir(),'culo-review-'));
+  const dbPath=join(dir,'register.sqlite');
+  const seed=new Register(dbPath);
+  seed.accept({...sample,received_at:new Date().toISOString()},sample.case_id);
+  seed.db.close();
+
+  const password='synthetic-handler-login';
+  const child=spawn(process.execPath,[
+    fileURLToPath(new URL('./service.mjs',import.meta.url)),'review',sample.case_id,
+  ],{env:{...process.env,CASE_DIR:dir,DEMO_REGISTER_PORT:'0',HANDLER_REF:'handler',HANDLER_PASSWORD:password},
+     stdio:['ignore','pipe','inherit']});
+  const closed=once(child,'close');
+  const lines=createInterface({input:child.stdout});
+  t.after(async()=>{
+    child.kill();
+    await closed;
+    rmSync(dir,{recursive:true,force:true});
+  });
+  const [url]=await Promise.race([
+    once(lines,'line',{signal:t.signal}),
+    closed.then(()=>{throw Error('Review server exited before providing the case link');}),
+  ]);
+  assert.equal(new URL(url).pathname,'/review/'+sample.case_id);
+  assert.equal((await fetch(url)).status,401);
+  assert.equal((await fetch(new URL('/tick',url),{method:'POST'})).status,404);
+  const headers={authorization:'Basic '+Buffer.from('handler:'+password).toString('base64')};
+  const getForm=async()=>{
+    const response=await fetch(url,{headers});
+    assert.equal(response.status,200);
+    return response.text();
+  };
+  const html=await getForm();
+  assert.match(html,/Human decision · pending/);
+  assert.match(html,/<form method="post">/);
+  assert.match(html,/<button>Record decision<\/button>/);
+  assert.doesNotMatch(html,/<fieldset disabled/);
+  const reason='Compare the original ledger entries.';
+  const fields=new URLSearchParams({action:'investigate',reason,clear:'yes'});
+  for(const name of ['expires','task','ticket']){
+    fields.set(name,html.match(new RegExp('name="'+name+'" value="([^"]+)"'))[1]);
+  }
+  const post=await fetch(url,{method:'POST',body:fields,headers,redirect:'manual'});
+  assert.equal(post.status,303);
+  assert.equal(new URL(post.headers.get('location'),url).href,url);
+  const refreshed=await getForm();
+  assert.match(refreshed,/Human decision · investigate/);
+  assert.ok(refreshed.includes(reason));
+  assert.match(refreshed,/Approve substantive feedback/);
+  const saved=new Register(dbPath);
+  try{
+    const record=saved.get(sample.case_id);
+    assert.deepEqual([record.decision,record.reason,record.approved],['investigate',reason,null]);
+  }finally{saved.db.close();}
 });

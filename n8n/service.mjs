@@ -1,7 +1,7 @@
 import {createServer} from 'node:http';
-import {createHmac,timingSafeEqual} from 'node:crypto';
+import {createHmac,randomBytes,timingSafeEqual} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
-import {mkdirSync} from 'node:fs';
+import {existsSync,mkdirSync} from 'node:fs';
 import {join} from 'node:path';
 import {homedir} from 'node:os';
 import {Register} from './register.mjs';
@@ -16,8 +16,9 @@ async function body(req) {
   for await(const chunk of req){size+=chunk.length;if(size>196608)reject(413);chunks.push(chunk);}
   return Buffer.concat(chunks).toString('utf8');
 }
-export function service(r,{wire,secret,password,sendTable,intakePort}){
-  if([wire,secret,password].some(s=>typeof s!=='string'||s.length<16) || new Set([wire,secret,password]).size!==3)throw Error('Configure three distinct secrets of 16 or more characters');
+export function service(r,{wire,secret,password,sendTable,intakePort,reviewOnly=false}){
+  const credentials=reviewOnly?[secret,password]:[wire,secret,password];
+  if(credentials.some(s=>typeof s!=='string'||s.length<16) || new Set(credentials).size!==credentials.length)throw Error('Configure distinct service credentials of 16 or more characters');
   const basic='Basic '+Buffer.from(r.actor+':'+password).toString('base64');
   const sign=(c,mode,expiry)=>createHmac('sha256',secret).update(JSON.stringify([c.id,c.task,c.actor,mode,expiry])).digest('hex');
   function form(c){
@@ -49,6 +50,7 @@ export function service(r,{wire,secret,password,sendTable,intakePort}){
     const reply=(status,value,type='application/json')=>{res.writeHead(status,{'content-type':type,...headers});res.end(value);};
     try{
       if(req.method==='POST' && ['/accept','/tick'].includes(req.url)){
+        if(reviewOnly)reject(404);
         if(!eq(req.headers.authorization,'Bearer '+(req.url==='/tick'?secret:wire)))reject(401);
         if(req.url==='/tick'){r.tick();if(sendTable)await r.mirror(sendTable);return reply(200,'{"ok":true}');}
         if(req.headers['content-type']?.split(';')[0]!=='application/json')reject(415);
@@ -89,15 +91,25 @@ export function tableAdapter(env){
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href){
   const e=process.env,dir=e.CASE_DIR??join(e.LOCALAPPDATA??homedir(),'culo-protected-demo');
-  mkdirSync(dir,{recursive:true,mode:0o700});
-  const sendTable=tableAdapter(e);
-  const r=new Register(join(dir,'register.sqlite'),{actor:e.HANDLER_REF??'handler',demo:e.DEMO_CLOCK==='1',table:!!sendTable,
-    reviewBase:'http://127.0.0.1:'+Number(e.DEMO_REGISTER_PORT??8788),
-    routes:(e.SYNTHETIC_MAILBOX_CASES??'').split(',').filter(Boolean)});
   const [cmd,id,kind,state]=process.argv.slice(2);
+  const reviewOnly=cmd==='review';
+  const file=join(dir,'register.sqlite');
+  if(reviewOnly && (!e.CASE_DIR || !id || !existsSync(file)))throw Error('Supply CASE_DIR with an existing register.sqlite and a case ID.');
+  if(!reviewOnly)mkdirSync(dir,{recursive:true,mode:0o700});
+  const sendTable=reviewOnly?undefined:tableAdapter(e);
+  const r=new Register(file,{actor:e.HANDLER_REF??'handler',demo:e.DEMO_CLOCK==='1',table:!!sendTable,
+    reviewBase:'http://127.0.0.1:'+Number(e.DEMO_REGISTER_PORT??8788),
+    routes:reviewOnly?[]:(e.SYNTHETIC_MAILBOX_CASES??'').split(',').filter(Boolean)});
   if(cmd==='route')r.route(id);
   else if(cmd==='reconcile')r.reconcile(id,kind,state);
   else if(cmd==='inbox')console.table(r.db.prepare('SELECT * FROM inbox WHERE id=?').all(id));
+  else if(reviewOnly){
+    if(r.get(id)?.actor!==r.actor)throw Error('This case is unavailable for the configured handler.');
+    const server=service(r,{reviewOnly:true,password:e.HANDLER_PASSWORD,secret:randomBytes(32).toString('hex')});
+    server.listen(Number(e.DEMO_REGISTER_PORT??0),'127.0.0.1',()=>{
+      console.log('http://127.0.0.1:'+server.address().port+'/review/'+encodeURIComponent(id));
+    });
+  }
   else if(cmd)throw Error('Unknown command');
   else service(r,{wire:e.N8N_TOKEN,secret:e.WORKER_TOKEN,password:e.HANDLER_PASSWORD,sendTable,
     intakePort:e.DEMO_INTAKE==='1'?e.DEMO_INTAKE_PORT:null}).listen(Number(e.DEMO_REGISTER_PORT??8788),'127.0.0.1');

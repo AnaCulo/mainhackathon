@@ -83,7 +83,7 @@ try{
   available=false;
   const prior=[modelCalls,handoffs,count()];assert.equal((await submit()).status,503);
   assert.deepEqual([modelCalls,handoffs,count()],prior);
-  let demo={id,text,elapsed,received_at:b.received_at,category:b.category,brane_status:b.brane_status,decisions:b.decisions};
+  let demo={id,reviewUrl:review(id),text,elapsed,received_at:b.received_at,category:b.category,brane_status:b.brane_status,decisions:b.decisions};
   writeFileSync(join(e.CASE_DIR,'walkthrough.json'),JSON.stringify(demo));
   if(!process.argv.includes('--hold')){
     const f=fields(await read(id));assert.equal((await act(id,f,'investigate')).status,303);

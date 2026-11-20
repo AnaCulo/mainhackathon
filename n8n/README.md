@@ -60,6 +60,18 @@ For a failure smoke, start a separate isolated instance with `BRANE_API_KEY` emp
 6. Set DEMO_CLOCK=1 **only** for synthetic cases. This opt-in is saved when each case is first accepted. Previously accepted cases retain their original settings. Prepare a synthetic return route by exact case ID using SYNTHETIC_MAILBOX_CASES, or run `node --env-file=<private-file> n8n/service.mjs route <case-id>` after receipt. It explicitly binds a case-scoped test mailbox. With no route, the dispatcher records unreachable. The reporter token never resolves to a destination. The designated email channel is captured locally at an .invalid address. Neither adapter sends external messages.
 7. The explicitly selected offline walkthrough uses the fixed synthetic report on disposable ports. The presenter form is available through the launch commands above. To inspect actual dispatches locally, use `node --env-file=<private-file> n8n/service.mjs inbox <case-id>`.
 
+### Record a decision in a saved demo
+
+During an offline walkthrough, launch with `-Offline -Hold` on Windows or `--offline --hold` on macOS/Linux. Open the printed pending-decision link and sign in with the designated handler's login from the private demo environment file.
+
+To reopen the same case after the demo stops, use Node 24 with the original private environment file and case ID. Keep the register database at the file's configured `CASE_DIR`.
+
+```sh
+node --env-file="<path-to-private-demo.env>" n8n/service.mjs review <case-id>
+```
+
+Open the printed loopback address. Choose an action, enter a reason, confirm you are authorised and conflict-free, and click **Record decision**. Refresh to see the saved decision and reason. Feedback requires a separate approval. This command serves the handler pages and saves to the existing register. The regular workflow handles delivery. Use a live review link when presenting a saved intake screen.
+
 ## Persistence, failure and permissions
 
 The SQLite register's primary key is the opaque case ID. One immediate transaction commits its immutable protected fields, digest, receipt, task ID, designated actor and outbox intents. A new case returns 201, an identical replay returns 200, and reuse with different protected content returns 409. Acceptance completes before the scheduler runs. Storage errors fail the handoff. A lost response can be retried with the same payload and idempotency key.
