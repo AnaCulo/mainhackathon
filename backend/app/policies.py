@@ -211,11 +211,22 @@ def screen(
         ),
         UNKNOWN,
     )
+    if time_hint == UNKNOWN:
+        day = re.search(
+            r"\b(?:on|last|this) (monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+            text,
+            re.IGNORECASE,
+        )
+        if day:
+            time_hint = day[1].capitalize()
     evidence = [
         label
         for pattern, label in [
-            (r"\b(attached|have) (an? |the )?email\b", "email"),
+            (r"\b((attached|have) (an? |the )?|forwarded )email\b", "email"),
             (r"\b(attached|have) (a |the )?photo\b", "photo"),
+            (r"\bledger\b", "ledger entries"),
+            (r"\bpurchase orders?\b", "purchase orders"),
+            (r"\binspection log\b", "inspection log"),
         ]
         if re.search(pattern, text, re.IGNORECASE)
     ]

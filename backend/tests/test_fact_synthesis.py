@@ -39,7 +39,11 @@ def wire(double):
     assert messages[0] == {"role": "system", "content": REPORT_PROMPT}
     previews = [b for url, b, _ in double.requests if url.endswith("/policy/test")]
     assert previews == [
-        {"prompt": m["content"], "executeCompletion": False} for m in messages
+        {"prompt": messages[1]["content"], "executeCompletion": False},
+        {
+            "prompt": "\n\n".join(m["content"] for m in messages),
+            "executeCompletion": False,
+        },
     ]
     assert all(
         url.startswith(HOSTED + "/") or url == double.settings.webhook
@@ -91,19 +95,12 @@ def test_safety_detail(setup, submit):
     )
     assert double.deliveries == [case]
     package = wire(double)
-    assert set(package) == {"facts", "question_ids", "person_mentions", "missing"}
-    event, evidence = package["facts"]
-    assert event == {
-        "fact_id": "F001",
-        "category": "safety",
-        "kind": "obstruction",
-        "count": 2,
-        "unit": "emergency exit",
-        "material": "pallets",
-        "period": "last week",
-    }
-    assert evidence["count"] == 3 and evidence["unit"] == "photograph"
-    assert package["missing"] == ["where", "who"]
+    assert set(package) == {"facts", "question_ids"}
+    assert package["facts"] == [
+        {"fact_id": "F001", "category": "safety", "kind": "obstruction"},
+        {"fact_id": "F002", "category": "other", "kind": "available"},
+    ]
+    assert package["question_ids"] == ["participants"]
     assert SAFETY not in json.dumps([b for _, b, _ in double.requests])
     detail, _ = private(db)
     assert (

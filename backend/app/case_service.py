@@ -3,10 +3,22 @@ from functools import partial
 from . import agent
 from .audit import record
 from .fact_extraction import extract_local_facts
-from .models import Case, Decision
+from .models import Brief, Case, Decision
 from .n8n_client import deliver
 from .policies import RULES, decision, screen
 from .security import Stop
+
+
+def brief_for(extraction):
+    """Handler brief built only from validated extraction fields (closed vocabulary)."""
+    facts = [p + "." for p in extraction.summary.removesuffix(".").split(". ")]
+    timeline = (
+        []
+        if extraction.approximate_time == "unknown"
+        else [f"Reported time: {extraction.approximate_time}."]
+    )
+    evidence = [f"{label[0].upper()}{label[1:]} (original held locally)." for label in extraction.evidence]
+    return Brief(facts=facts, timeline=timeline, evidence=evidence)
 
 
 async def submit(state, rid, key, text, identities, source, reporter_mode):
@@ -49,6 +61,7 @@ async def submit(state, rid, key, text, identities, source, reporter_mode):
             summary=extraction.summary,
             persons=extraction.persons,
             received_at=received,
+            brief=brief_for(extraction),
             decisions=[
                 *local_decisions,
                 Decision(policy="P5", action="ALLOW", count=None),

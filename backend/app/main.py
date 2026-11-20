@@ -54,6 +54,12 @@ def create_app(settings=None, transport=None):
 
     @app.exception_handler(RequestValidationError)
     async def invalid(request, exc):
+        # Field locations and error types only, never input values: enough to see which
+        # unexpected field a client (e.g. the ElevenLabs Custom LLM caller) sent.
+        shape = sorted({(".".join(str(p) for p in e.get("loc", ())), e.get("type")) for e in exc.errors()})
+        logging.getLogger("uvicorn.error").warning(
+            "invalid_request %s %s %s", request.state.rid, request.url.path, shape[:20]
+        )
         return JSONResponse(
             {"error": "invalid_request", "request_id": request.state.rid},
             status_code=422,

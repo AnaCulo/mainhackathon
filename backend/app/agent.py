@@ -24,16 +24,24 @@ VOICE_PROMPT = (
 )
 
 
+# BRANE's PERSON detector flags our case tokens as names, depending on context. Live
+# previews (20 Nov, policy-v2) flagged PERSON_01 always, and <PERSON_1>, P-01, REF-01 and
+# CASE-REF-01 in some fixtures or once the system prompt is in the same scan. #P01 previewed
+# clean in every fixture, per message and combined. Case tokens are therefore rendered as
+# #P01 (persons) / #R01 (reporter) only for the gateway and translated back before
+# validation. Case JSON, n8n and the local mapping keep PERSON_01 / REPORTER_01.
 _CASE_TOKEN = re.compile(r"\b(PERSON|REPORTER)_(\d{2})\b")
-_GATEWAY_TOKEN = re.compile(r"<(PERSON|REPORTER)_(\d{1,2})>")
+_GATEWAY_TOKEN = re.compile(r"#([PR])(\d{2})\b")
+_TO = {"PERSON": "P", "REPORTER": "R"}
+_FROM = {v: k for k, v in _TO.items()}
 
 
 def to_gateway(text):
-    return _CASE_TOKEN.sub(lambda m: f"<{m[1]}_{int(m[2])}>", text)
+    return _CASE_TOKEN.sub(lambda m: f"#{_TO[m[1]]}{m[2]}", text)
 
 
 def from_gateway(text):
-    return _GATEWAY_TOKEN.sub(lambda m: f"{m[1]}_{int(m[2]):02}", text)
+    return _GATEWAY_TOKEN.sub(lambda m: f"{_FROM[m[1]]}_{m[2]}", text)
 
 
 class Synthesis(Strict):
@@ -78,6 +86,8 @@ TOPICS = {
 
 
 def render(fact: SafeFact):
+    if fact.kind == "differing_totals":
+        return "The report describes a discrepancy between invoice totals."
     if fact.kind == "purchase_without_signoff":
         return f"{fact.subject} allegedly approved a purchase without the required second sign-off."
     if fact.kind == "topic":
@@ -114,9 +124,15 @@ def unique_fields(pairs):
 
 def parse_case(content: str, package: ApprovedPackage):
     try:
-        choice = Synthesis.model_validate(
-            json.loads(content, object_pairs_hook=unique_fields)
-        )
+        plan = json.loads(content, object_pairs_hook=unique_fields)
+        if isinstance(plan, dict) and isinstance(
+            plan.get("follow_up_question_ids"), list
+        ):
+            plan["follow_up_question_ids"] = [
+                "who" if q == "participants" else q
+                for q in plan["follow_up_question_ids"]
+            ]
+        choice = Synthesis.model_validate(plan)
     except (ValueError, RecursionError):
         raise Stop(502, "invalid_model_output") from None
     by_id = {fact.fact_id: fact for fact in package.facts}
@@ -142,13 +158,17 @@ def parse_case(content: str, package: ApprovedPackage):
                 sentence = "Subsequently, " + sentence[0].lower() + sentence[1:]
         sentences.append(sentence)
     times = list(dict.fromkeys(f.period for f in package.facts if f.period))
+    times.extend(f.weekday for f in package.facts if f.weekday)
+    evidence = [f.unit for f in package.facts if f.kind == "available"]
+    if any(f.ledger_entries for f in package.facts):
+        evidence.append("ledger entries")
     detail = Extraction(
         category=choice.category,
         summary=" ".join(sentences),
         approximate_time=", ".join(times) or "unknown",
         location=next((f.location for f in package.facts if f.location), "unknown"),
         persons=list(dict.fromkeys(package.person_mentions)),
-        evidence=[f.unit for f in package.facts if f.kind == "available"],
+        evidence=evidence,
         missing=package.missing,
         follow_up=[QUESTIONS[key] for key in follow],
     )
@@ -168,5 +188,23 @@ def messages(system, data):
 def report_messages(package: ApprovedPackage):
     return messages(
         REPORT_PROMPT,
-        {**package.model_dump(exclude_none=True), "question_ids": questions(package)},
+        {
+            "facts": [
+                f.model_dump(
+                    include={
+                        "fact_id",
+                        "category",
+                        "kind",
+                        "topic",
+                        "subject",
+                        "after",
+                    },
+                    exclude_none=True,
+                )
+                for f in package.facts
+            ],
+            "question_ids": [
+                "participants" if key == "who" else key for key in questions(package)
+            ],
+        },
     )

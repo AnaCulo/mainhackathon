@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 HOSTED = "https://brane.ai-z.io/api/v1"
 MODEL = "openrouter:openai/gpt-6-luna"
+LOOPBACK = {"127.0.0.1", "::1"}
 
 
 @dataclass(frozen=True)
@@ -55,8 +56,11 @@ class Settings:
             raise ValueError("Use distinct intake and voice credentials")
         if settings.webhook:
             parts = urlsplit(settings.webhook)
+            # Plain HTTP only to a numeric loopback host: the team's n8n demo instance
+            # runs on 127.0.0.1:5689, so the case never leaves this machine.
+            local_http = parts.scheme == "http" and parts.hostname in LOOPBACK
             if not (
-                parts.scheme == "https"
+                (parts.scheme == "https" or local_http)
                 and parts.hostname
                 and not parts.username
                 and not parts.password

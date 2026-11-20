@@ -1,0 +1,80 @@
+{
+  "note": "Generated caller audio (macOS say), synthetic report. ElevenLabs STT/TTS, backend + live BRANE.",
+  "agent_id": "agent_5001m7wyb7nbf1x8c7aan33vct1m",
+  "conversation_id": "conv_9101m7x5g30ff4kr51kgh6v4t7vp",
+  "session_id": "ebb7a2aa-8188-4e47-9bb4-53f5e537e00b",
+  "caller_lines_spoken": [
+    "Start recorded voice.",
+    "A warehouse emergency exit was blocked with boxes.",
+    "It happened yesterday, in the warehouse.",
+    "I have a photo of it."
+  ],
+  "events": [
+    {
+      "agent": "Hello. I’m an AI assistant with a computer-generated voice. I can help you report something that happened at work. Please wait to share details until you’ve chosen how to report. If you choose recorded voice, we’ll send your voice to ElevenLabs to turn your words into text. ElevenLabs hears what you say before our system can remove names. We’ll record the conversation to document your report. Our system uses a protected version of the text to draft a case. An authorised human case handler reviews it and decides what happens next. You can report without giving your name. Your voice, connection details or the events you describe could still identify you. Access to the report is restricted. In some circumstances the law can require information to be shared. You can use secure text instead, or ask to speak to a person without recording. The privacy notice on this page explains who handles the information, how long it is kept and how to exercise your rights. To use ElevenLabs voice processing and agree to the recording, choose “Start recorded voice”. For text, choose “Report by text”. For an unrecorded conversation, choose “Speak to a person”."
+    },
+    {
+      "caller_transcript": "Start recorded voice."
+    },
+    {
+      "agent": "What happened?"
+    },
+    {
+      "caller_transcript": "A warehouse emergency exit was blocked with boxes."
+    },
+    {
+      "agent": "What evidence, if any, is available?"
+    },
+    {
+      "caller_transcript": "It happened yesterday in the warehouse."
+    },
+    {
+      "agent": "Who was involved? Roles are enough."
+    },
+    {
+      "caller_transcript": "I have a photo of it."
+    },
+    {
+      "agent": "Would you like to submit this report for human review?"
+    }
+  ],
+  "bridge_finalize": {
+    "session": {
+      "revision": 4,
+      "state": "open"
+    },
+    "finalize_status": 200,
+    "case": {
+      "case_id": "WB-6b3c102c3be04963abedf3af8943946e",
+      "reporter": "REPORTER_01",
+      "category": "safety",
+      "summary": "The report mentions an emergency exit.",
+      "persons": [],
+      "received_at": "2026-11-20T19:05:44.303812Z",
+      "decisions": [
+        {
+          "policy": "P5",
+          "action": "ALLOW",
+          "count": null
+        },
+        {
+          "policy": "P6",
+          "action": "HUMAN_ONLY",
+          "count": null
+        }
+      ],
+      "brane_status": "ok",
+      "brief": {
+        "facts": [
+          "The report mentions an emergency exit."
+        ],
+        "timeline": [
+          "Reported time: yesterday."
+        ],
+        "evidence": [
+          "Photo (original held locally)."
+        ]
+      }
+    }
+  }
+}

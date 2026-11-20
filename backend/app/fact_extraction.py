@@ -53,6 +53,7 @@ Period = Literal[
     "december",
 ]
 Kind = Literal[
+    "differing_totals",
     "purchase_without_signoff",
     "obstruction",
     "discrepancy",
@@ -84,6 +85,13 @@ class SafeFact(Strict):
     fact_id: FactID
     kind: Kind
     category: Category
+    ledger_entries: bool = False
+    weekday: (
+        Literal[
+            "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+        ]
+        | None
+    ) = None
     subject: Annotated[str, Field(pattern=r"^PERSON_[0-9]{2,}$")] | None = None
     unit: Unit | None = None
     count: int | None = Field(default=None, ge=1, le=10)
@@ -289,6 +297,45 @@ def _topic_facts(screened, text):
 
 
 def extract_local_facts(text: str, screened: Screened) -> FactReview:
+    # Preserve the handler brief for an independent discrepancy with coarse
+    # timing and ledger evidence. Only the event descriptor goes to the model.
+    totals = re.fullmatch(
+        r"(?:two |the )?invoice totals differ"
+        r"(?:\.\s+the discrepancy appeared on (monday|tuesday|wednesday|thursday|friday|saturday|sunday))?"
+        r"(?:\.\s+(the ledger (?:has|contains) both entries))?\.?",
+        text.strip(),
+        FLAGS,
+    )
+    if totals and not screened.mappings:
+        fact = SafeFact(
+            fact_id="F001",
+            kind="differing_totals",
+            category="other",
+            weekday=totals[1].capitalize() if totals[1] else None,
+            ledger_entries=bool(totals[2]),
+        )
+        missing = [
+            k
+            for k, known in (
+                ("when", fact.weekday),
+                ("where", False),
+                ("who", False),
+                ("evidence", fact.ledger_entries),
+            )
+            if not known
+        ]
+        return FactReview(
+            ApprovedPackage(facts=[fact], missing=missing, person_mentions=[]),
+            [
+                {
+                    "method": "differing_totals",
+                    "span": [0, len(text)],
+                    "classification": "ALLOW",
+                    "policy": "P5",
+                    "released": fact.model_dump(exclude_none=True),
+                }
+            ],
+        )
     observations, complete = _read(text)
     # Unknown context may contradict an event or identify its participants.
     # Never export rich details from a partially understood narrative, or

@@ -32,6 +32,11 @@
   "topics": [
     [
       "fraud",
+      "invoice totals? differ|totals? differ|discrepanc(?:y|ies)",
+      "The report describes a discrepancy between invoice totals."
+    ],
+    [
+      "fraud",
       "invoices?|ledger|fraud",
       "The report mentions a concern about invoicing or financial records."
     ],

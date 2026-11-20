@@ -153,6 +153,10 @@ def run_case(case, base, model):
         reasons.append("LEAKED to cloud: " + "; ".join(leaks))
     if outcome.startswith("cloud") and not answer.strip():
         reasons.append("empty answer")
+    # Placeholder must survive into the draft that goes downstream (BRANE can restore names in answers).
+    restored = [s for s in case.get("must_not_in_answer", []) if s.lower() in answer.lower()]
+    if restored:
+        reasons.append("draft not pseudonymised (name restored in answer): " + "; ".join(restored))
     verdict = "PASS" if not reasons else "FAIL"
     if lost:
         reasons.append("usefulness: needed detail removed: " + "; ".join(lost))
@@ -192,7 +196,7 @@ def run_unavailable_check(model):
         verdict = "PASS"
     return {
         "case": {"id": "T5b", "scenario": "Mandatory (CSV template) · Check unavailable / unverifiable",
-                 "expected": "If BRANE cannot be reached, nothing is sent to any model: no automatic cloud fallback.",
+                 "expected": "P5 (failed or inconclusive check → BLOCK): if BRANE cannot be reached, nothing is sent to any model and there is no automatic cloud fallback.",
                  "report": "Synthetic test report.", "evidence": ""},
         "outcome": "not_sent", "brane_headers": {}, "answer": result, "verdict": verdict,
         "reasons": ["Client-side fail-closed check. Repeat against the backend: expect HTTP 503 and zero webhook calls (P5)."],
@@ -238,7 +242,7 @@ def main():
     cases = json.loads(DATA.read_text(encoding="utf-8"))["cases"]
     results = []
     for case in cases:
-        if wanted and case["id"] not in wanted:
+        if wanted and case["id"].upper() not in wanted:
             continue
         r = run_case(case, base, model)
         results.append(r)

@@ -56,6 +56,11 @@ class Double:
         assert req.headers["authorization"] == "Bearer test-tenant"
         if self.fault == "timeout":
             raise httpx.ReadTimeout("synthetic failure")
+        if req.url.path.endswith("/models"):
+            assert req.method == "GET"
+            return httpx.Response(200, json={"data": [
+                {"id": "auto" if self.fault == "model_missing" else MODEL}
+            ]})
         if req.url.path.endswith("/policy"):
             return httpx.Response(200, json={} if self.fault == "drift" else POLICY)
         if req.url.path.endswith("/policy/test"):
@@ -66,7 +71,9 @@ class Double:
                 200,
                 json={
                     "decision": {"route": "cloud"},
-                    "detectedCategories": [],
+                    "detectedCategories": [{"label": "PERSON", "sampleText": "#P01"}]
+                    if self.fault == "combined" and "\n\n{" in body["prompt"]
+                    else [],
                     "matchedSemanticCategories": [],
                     "promptInjection": {"detected": False},
                     "outgoingCloudPayloadPreview": None
@@ -89,17 +96,25 @@ class Double:
         if body["stream"]:
             answer = self.answer or data["allowed_questions"][0]
             parts = [(answer[:7], None), (answer[7:], None), ("", "stop")]
+            reasoning = {"reasoning": "internal", "reasoning_details": [{"type": "x"}]} \
+                if self.fault == "reasoning" else {}
             lines = [
                 "data: "
                 + json.dumps(
                     {
                         "choices": [
-                            {"index": 0, "delta": {"content": v}, "finish_reason": f}
+                            {"index": 0, "delta": {"content": v, **reasoning}, "finish_reason": f}
                         ]
                     }
                 )
                 for v, f in parts
             ]
+            if self.fault in {"trailing_usage", "trailing_content"}:
+                # OpenRouter's trailing chunk after stop (empty delta), or a hostile variant.
+                extra = "late text" if self.fault == "trailing_content" else ""
+                lines.append("data: " + json.dumps({"choices": [{"index": 0, "delta": {
+                    "role": "assistant", "content": extra}, "finish_reason": "stop"}],
+                    "usage": {"total_tokens": 1}}))
             if self.fault != "truncated":
                 lines.append("data: [DONE]")
             return httpx.Response(

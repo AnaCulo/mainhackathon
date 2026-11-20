@@ -1,0 +1,180 @@
+{
+  "id": "CuloCaseWorkflow01",
+  "name": "Čulo · protected case and follow-up",
+  "active": false,
+  "nodes": [
+    {
+      "id": "ce100000-1000-4000-8000-000000000000",
+      "name": "Protected case",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "protected-case",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "ce100000-1000-4000-8000-000000000010",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CuloIntakeHeader1",
+          "name": "Protected intake"
+        }
+      }
+    },
+    {
+      "id": "ce100000-1000-4000-8000-000000000001",
+      "name": "Commit case and pending task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8788/accept",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $json.headers['idempotency-key'] || '' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.headers['content-type']?.split(';')[0] === 'application/json' ? $json.body : {} }}",
+        "options": {
+          "timeout": 6000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CuloIntakeHeader1",
+          "name": "Protected intake"
+        }
+      }
+    },
+    {
+      "id": "ce100000-1000-4000-8000-000000000002",
+      "name": "Return durable result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.body }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode }}"
+        }
+      }
+    },
+    {
+      "id": "ce100000-1000-4000-8000-000000000003",
+      "name": "Check outstanding work",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        220
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 15
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ce100000-1000-4000-8000-000000000004",
+      "name": "Dispatch due work",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8788/tick",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 8000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CuloWorkerHeader1",
+          "name": "Local dispatcher"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Protected case": {
+      "main": [
+        [
+          {
+            "node": "Commit case and pending task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Commit case and pending task": {
+      "main": [
+        [
+          {
+            "node": "Return durable result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check outstanding work": {
+      "main": [
+        [
+          {
+            "node": "Dispatch due work",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Amsterdam",
+    "saveExecutionProgress": false,
+    "saveManualExecutions": false,
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none"
+  },
+  "pinData": {}
+}

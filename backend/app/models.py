@@ -36,6 +36,12 @@ class Decision(Strict):
     count: int | None = Field(ge=0)
 
 
+class Brief(Strict):
+    facts: list[str]
+    timeline: list[str]
+    evidence: list[str]
+
+
 class Case(Strict):
     case_id: str
     reporter: Literal["REPORTER_01"] = "REPORTER_01"
@@ -45,6 +51,7 @@ class Case(Strict):
     received_at: str
     decisions: list[Decision]
     brane_status: Literal["ok"] = "ok"
+    brief: Brief | None = None
 
 
 class Extraction(Strict):
@@ -68,6 +75,12 @@ class SessionRef(BaseModel):
     session_id: UUID
 
 
+class StreamOptions(BaseModel):
+    # Sent by ElevenLabs' Custom LLM caller ({"include_usage": true}); accepted, never acted on.
+    model_config = ConfigDict(extra="ignore", strict=True)
+    include_usage: bool | None = None
+
+
 class Chat(Strict):
     model: str
     messages: list[Message] = Field(min_length=1, max_length=64)
@@ -75,6 +88,8 @@ class Chat(Strict):
     stream: Literal[True] = True
     temperature: float | None = Field(default=None, ge=0, le=2)
     max_tokens: int | None = Field(default=None, ge=1, le=16000)
+    max_completion_tokens: int | None = Field(default=None, ge=1, le=16000)
+    stream_options: StreamOptions | None = None
     top_p: float | None = Field(default=None, ge=0, le=1)
     user: Name | None = None
     user_id: Name | None = None

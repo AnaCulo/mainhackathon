@@ -20,6 +20,7 @@ For each model request the adapter performs the following operations against the
 
 | Operation | Release condition | Failure behavior |
 | --- | --- | --- |
+| GET /models | Catalog lists the exact approved OpenAI ID | 503 before sending a prompt |
 | GET /policy | Reviewed digest, recognised summary, semantic rules active, local/refuse controls enabled | Reject before completion |
 | POST /policy/test for each exact message body with executeCompletion=false | Clean cloud preview, identical outgoing preview text, empty category and semantic matches, negative injection flag | Withhold on a different route, detection, missing field or altered payload |
 | POST /chat/completions | Fixed model ID and server-constructed messages only | One attempt. No direct provider request, retry or alternate model |
@@ -43,8 +44,17 @@ Supply the team key, approved policy export/fingerprint and current tenant trace
 
 ## Pseudonym tokens at the gateway (20 Nov, policy-v2)
 
-BRANE's PERSON detector flags the case tokens `PERSON_01` and `REPORTER_01` as names. The backend releases only previews with zero detections, so any report with a recognised person used to stop with `preview_not_clean`. BRANE's own placeholder form previews clean on the live tenant. `agent.to_gateway` therefore renders tokens as `<PERSON_1>` / `<REPORTER_1>` in outbound messages. The merged synthesis protocol returns fact IDs. The backend renders case pseudonyms from its local records. Case JSON, n8n and the local mapping keep `PERSON_01`.
+BRANE's PERSON detector flags the case tokens `PERSON_01` and `REPORTER_01` as names. The backend releases only previews with zero detections, so any report with a recognised person used to stop with `preview_not_clean`. In repeated live previews `<PERSON_1>`, `P-01`, `REF-01` and `CASE-REF-01` were also flagged in some fixtures, or once the system prompt was scanned together with the user message. `#P01` previewed clean in every fixture, per message and combined. `agent.to_gateway` therefore renders tokens as `#P01` / `#R01` in outbound messages, and the backend renders selected fact IDs using the original case tokens. Case JSON, n8n and the local mapping keep `PERSON_01`.
 
 Ordinary policy breaches linked to one accused person now produce a tokenised cloud draft, following the policy matrix's P2/P5 row (*"PERSON_01 allegedly approved a purchase without the required second sign-off."*). Criminal-offence wording stays local under P3. Live run on policy-v2 against the synthetic fixtures:
 - T1, T3, P3a, E1, E4 and E5 returned cases.
 - T2, T4, T5, P3b, E2 and E3 were held locally.
+
+**Combined preview.** BRANE scans a live completion as one conversation, and context changes detection. On 20 Nov every P3a message previewed clean on its own, but the live call came back `Action: placeholder, Redacted: true`. The backend rejected the result (`unverified_completion_headers`), but a cloud call had already happened. The preflight now also previews all messages joined. A case like that stops at the preview, before any model call.
+
+**Voice and minimisation fixes (20 Nov, 17:45).** These came out of the live voice harness (`voice/harness.py`, `n8n/demo.sh --voice`):
+1. BRANE's prompt guard flags a server-owned system prompt when it is scanned alone. System prompts are now previewed only inside the combined preview, and caller-derived messages are still previewed one by one.
+2. OpenRouter sends an empty usage chunk after the stop chunk. The stream parser accepts it only if it carries no content and no other finish reason.
+3. BRANE flagged the `location` field as ADDRESS and "who" as PERSON. The model now receives only the category/summary draft and the released observation sentences (GDPR Art. 5(1)(c)). The merged fact-selection protocol sends minimal descriptors and eligible question IDs. Counts, time, place, evidence details and full question text stay local. The backend renders selected details after validation.
+
+**Streamed reasoning fields (20 Nov, 20:15).** The full check run found that about 1 in 3 live voice turns failed with `invalid_gateway_stream`. OpenRouter sometimes streams the model's internal `reasoning` and `reasoning_details` alongside the answer. The stream parser now accepts these two keys and discards them. Only `content` is used, and it is still validated against the allowed questions. Two full voice runs passed after the fix, and `test_reasoning_fields_in_stream_are_discarded` covers it.

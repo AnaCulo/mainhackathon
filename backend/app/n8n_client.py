@@ -7,6 +7,15 @@ from .audit import now
 from .models import Case
 
 
+def wire(case):
+    """Case JSON for the webhook. Omit an absent brief (receiver rejects "brief": null);
+    keep "count": null in decisions, which the receiver requires."""
+    body = case.model_dump()
+    if body.get("brief") is None:
+        body.pop("brief", None)
+    return body
+
+
 async def deliver(db, http, settings, cid):
     """Lease a durable outbox entry. The receiver deduplicates by case_id."""
     if not settings.webhook:
@@ -32,7 +41,7 @@ async def deliver(db, http, settings, cid):
         async with http.stream(
             "POST",
             settings.webhook,
-            json=payload.model_dump(),
+            json=wire(payload),
             headers={
                 "Authorization": "Bearer " + settings.webhook_key,
                 "Idempotency-Key": cid,

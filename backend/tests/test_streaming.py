@@ -123,3 +123,32 @@ async def test_disconnect_cancels_inflight_gateway_call():
     with pytest.raises(Stop, match="client_disconnected"):
         await while_connected(Gone(), waiting())
     assert cancelled.is_set()
+
+
+@pytest.mark.parametrize("fault,status", [("trailing_usage", 200), ("trailing_content", 502)])
+def test_trailing_chunk_after_stop(setup, fault, status):
+    # Live OpenRouter streams send one empty usage chunk after the stop chunk.
+    client, double, _ = setup
+    double.fault = fault
+    r = client.post("/v1/chat/completions", json=body(str(uuid4()), "A warehouse emergency exit was blocked."), headers=VOICE)
+    assert r.status_code == status
+
+
+def test_elevenlabs_compatibility_fields_accepted(setup):
+    # Observed live (20 Nov): ElevenLabs' Custom LLM caller adds these two fields.
+    client, double, _ = setup
+    data = body(str(uuid4()), "A warehouse emergency exit was blocked.")
+    data["max_completion_tokens"] = 5000
+    data["stream_options"] = {"include_usage": True}
+    r = client.post("/v1/chat/completions", json=data, headers=VOICE)
+    assert r.status_code == 200 and "[DONE]" in r.text
+    data["surprise"] = 1  # anything else is still rejected
+    assert client.post("/v1/chat/completions", json=data, headers=VOICE).status_code == 422
+
+
+def test_reasoning_fields_in_stream_are_discarded(setup):
+    # Observed live (20 Nov): OpenRouter sometimes streams reasoning alongside content.
+    client, double, _ = setup
+    double.fault = "reasoning"
+    r = client.post("/v1/chat/completions", json=body(str(uuid4()), "A warehouse emergency exit was blocked."), headers=VOICE)
+    assert r.status_code == 200 and "internal" not in r.text and "[DONE]" in r.text

@@ -1,0 +1,86 @@
+{
+  "_note": "BRANE team policy for Group Čulo, derived from docs/policy-matrix.md (Person A). Apply with: python3 brane/apply_policy.py. Changing anything here changes the policy fingerprint; re-pin BRANE_POLICY_SHA256 in backend/.env afterwards.",
+  "version": "policy-v2",
+  "routingMode": "cloud-preferred",
+  "piiSensitivity": "low",
+  "categories": {
+    "PERSON": "placeholder",
+    "EMAIL": "placeholder",
+    "PHONE": "placeholder",
+    "ADDRESS": "placeholder",
+    "IP_ADDRESS": "placeholder",
+    "DATE_OF_BIRTH": "placeholder",
+    "SSN": "placeholder",
+    "PASSPORT": "placeholder",
+    "TAX_NUMBER": "placeholder",
+    "INSURANCE_NUMBER": "placeholder",
+    "IBAN": "placeholder",
+    "CREDIT_CARD": "placeholder",
+    "ACCOUNT_NUMBER": "placeholder",
+
+    "ORG": "allow",
+    "TRADE_REGISTER": "allow",
+    "VAT_ID": "allow",
+
+    "PASSWORD": "refuse",
+    "SECRET_KEY": "refuse",
+
+    "HEALTH_DATA": "local",
+    "ETHNIC_ORIGIN": "local",
+    "POLITICAL_OPINION": "local",
+    "RELIGIOUS_BELIEF": "local",
+    "SEXUAL_ORIENTATION": "local",
+    "TRADE_UNION": "local",
+    "SENSITIVE_CONTEXT": "local"
+  },
+  "semanticCategories": [
+    {
+      "code": "INDIRECT_HEALTH_CONTEXT",
+      "name": "Indirect health, sick-leave and accommodation context",
+      "description": "Any mention of a person's medical absence, burnout, therapy, medication, surgery, pregnancy, disability accommodation or symptoms, even without a formal diagnosis. Covers the reporter, witnesses and accused persons.",
+      "keywords": ["burnout", "sick leave", "medication", "surgery", "therapy", "psychologist", "disability accommodation"],
+      "legalBasis": "GDPR Art. 9(1); policy matrix P3 LOCAL ONLY",
+      "action": "local"
+    },
+    {
+      "code": "CRIMINAL_OFFENCE_ALLEGATION",
+      "name": "Person-linked criminal-offence allegation",
+      "description": "An allegation or suspicion, supported by concrete indications, that an identifiable person committed a criminal offence such as forgery, falsifying documents or declarations, theft, embezzlement, bribery or fraud. Ordinary internal policy breaches (for example a missing second sign-off or a skipped procurement step) are NOT covered.",
+      "keywords": ["forged", "forgery", "falsify", "falsified", "embezzle", "bribe", "stole"],
+      "legalBasis": "GDPR Art. 10; UAVG Arts. 32-33; Dutch AP guidance on criminal-offence data; policy matrix P3 LOCAL ONLY",
+      "action": "local"
+    },
+    {
+      "code": "INDIRECT_REPORTER_IDENTIFICATION",
+      "name": "Indirect identification of the reporter",
+      "description": "Details that single out the reporter without naming them: being the only person in a role, shift, team or location, or a unique combination of role, time and place.",
+      "keywords": ["the only", "only one on", "only night", "I am the only"],
+      "legalBasis": "Directive (EU) 2019/1937 Art. 16(1); Wbk Art. 1a; GDPR Recital 26; policy matrix P1",
+      "action": "local"
+    },
+    {
+      "code": "CONFIDENTIAL_TRADE_SECRET",
+      "name": "Trade secrets and confidential commercial detail",
+      "description": "Unreleased formulas, internal margins, rebate tables, settlement ceilings or unannounced bid prices included in a report or its evidence.",
+      "keywords": ["formula", "settlement ceiling", "bid ceiling", "gross margin", "rebate table"],
+      "legalBasis": "EU Trade Secrets Directive 2016/943 Art. 2; Wbk Art. 1a; policy matrix P3 LOCAL ONLY",
+      "action": "local"
+    },
+    {
+      "code": "EMBEDDED_INSTRUCTION_OVERRIDE",
+      "name": "Instruction embedded in a report or evidence",
+      "description": "Text inside a report or attached document that tries to instruct the AI to ignore or override privacy rules, reveal or include a real name or identity, publish contact details, or take an action.",
+      "keywords": ["ignore all previous", "ignore your rules", "compliance override", "include the reporter's full name", "system note to the ai"],
+      "legalBasis": "GDPR Arts. 25 and 32; Wbk Art. 1a; policy matrix P4 BLOCK",
+      "action": "refuse"
+    },
+    {
+      "code": "AUTONOMOUS_DECISION_ABOUT_PERSON",
+      "name": "Autonomous decision affecting a person",
+      "description": "A request for the AI to decide on its own to investigate, dismiss, discipline, escalate, close a case or disclose an identity without an authorised human.",
+      "keywords": ["terminate contract immediately", "dismiss the employee", "close the case automatically"],
+      "legalBasis": "GDPR Art. 22; EU AI Act Art. 14; policy matrix P6 HUMAN ONLY",
+      "action": "refuse"
+    }
+  ]
+}
