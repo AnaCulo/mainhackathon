@@ -90,13 +90,17 @@ def test_in_flight_reservation(setup):
     assert db.reserve(key, {"text": CONTROL}, "second") == (cid, received, None)
 
 
-def test_model_can_prioritize_multiple_grounded_observations(setup, submit):
+def test_model_reads_multi_topic_report_and_chooses_category(setup, submit):
     text = "A safety concern was raised alongside harassment."
     setup[1].answer = json.dumps(
         {
             "category": "harassment",
-            "selected_fact_ids": ["F002", "F001"],
-            "follow_up_question_ids": ["where"],
+            "facts": ["The reporter states that a safety concern was raised alongside harassment."],
+            "timing": "unknown",
+            "setting": "unknown",
+            "evidence": [],
+            "gaps": ["when", "where", "who", "evidence"],
+            "questions": ["where"],
         }
     )
     assert submit(text).json()["category"] == "harassment"
@@ -104,6 +108,12 @@ def test_model_can_prioritize_multiple_grounded_observations(setup, submit):
 
 def test_unknown_narrative_held_before_egress(setup, submit):
     r = submit("The person from the tiny satellite office knows more.")
+    assert r.status_code == 202 and r.json()["hold_reason"] == "local_review_required"
+    assert not setup[1].gateway_requests
+
+
+def test_too_little_to_summarise_is_held_before_egress(setup, submit):
+    r = submit("Something happened at work.")
     assert r.status_code == 202 and r.json()["hold_reason"] == "local_review_required"
     assert not setup[1].gateway_requests
 
@@ -149,7 +159,7 @@ def test_policy_description_alone_does_not_assert_a_breach(submit):
     assert case["summary"] == "The report mentions a second approval requirement."
 
 
-def test_job_title_alone_cannot_establish_a_safety_concern(setup, submit):
+def test_job_title_alone_does_not_force_a_safety_category(setup, submit):
     response = submit("I drive a forklift. Some pallets went missing.")
     assert response.status_code == 202
     assert setup[1].gateway_requests == []

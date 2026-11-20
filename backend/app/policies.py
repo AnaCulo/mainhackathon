@@ -52,6 +52,10 @@ class Screened:
     mentions: list[str]
     decisions: list[Decision]
     mappings: list[tuple[str, str, str]]
+    # Normalised report with every bound alias replaced by its case token
+    # (PERSON_01 / REPORTER_01). Still a local document until the narrative
+    # path redacts it further and BRANE previews it.
+    protected: str = ""
 
 
 def specific_observations(text):
@@ -326,4 +330,5 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False, aud
         if d.action == "BLOCK":
             raise Stop(422, "identity_withheld", d.policy)
     observations = list(dict.fromkeys(topics))
-    return Screened(fields, observations, specific, mentions, decisions, mappings)
+    protected = text.replace("\x00", "")
+    return Screened(fields, observations, specific, mentions, decisions, mappings, protected)

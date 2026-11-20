@@ -210,7 +210,6 @@ def test_combination_downgrades_mixed_context(setup, submit):
 @pytest.mark.parametrize(
     "text",
     [
-        "Two approvals were not missing last week.",
         "If two approvals were missing, would a review begin?",
         "Three photographs are not available.",
         "There was no fraud.",

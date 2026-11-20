@@ -134,6 +134,8 @@ class Double:
                 headers={**headers, "content-type": "text/event-stream"},
                 text="\n\n".join(lines) + "\n\n",
             )
+        if "report" in data:
+            return self._narrative(headers, data["report"])
         facts = sorted(data["facts"], key=lambda f: f["kind"] == "available")[:3]
         questions = sorted(data["open_questions"], key=lambda k: k != "evidence")[:2]
         content = (
@@ -153,4 +155,32 @@ class Double:
             json={
                 "choices": [{"finish_reason": "stop", "message": {"content": content}}]
             },
+        )
+
+    def _narrative(self, headers, report):
+        """Deterministic stand-in for the model reading a protected narrative."""
+        self.narratives = getattr(self, "narratives", []) + [report]
+        if self.answer is not None:
+            content = self.answer
+        else:
+            first = report.split(". ")[0].rstrip(".")
+            category = next(
+                (c for c, cue in (("harassment", "useless"), ("safety", "brake"),
+                                  ("discrimination", "applicants"), ("fraud", "invoice"))
+                 if cue in report.casefold()),
+                "other",
+            )
+            content = json.dumps({
+                "category": category,
+                "facts": ["The reporter states that " + first[0].lower() + first[1:] + "."],
+                "timing": "unknown",
+                "setting": "unknown",
+                "evidence": [],
+                "gaps": ["when", "where", "evidence"],
+                "questions": ["evidence", "when"],
+            })
+        return httpx.Response(
+            200,
+            headers=headers,
+            json={"choices": [{"finish_reason": "stop", "message": {"content": content}}]},
         )
