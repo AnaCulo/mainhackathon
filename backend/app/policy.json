@@ -1,0 +1,81 @@
+{
+  "version": "synthetic-intake-2",
+  "P1": "PROTECT",
+  "P2": "PROTECT",
+  "P3": "LOCAL_ONLY",
+  "P4": "BLOCK",
+  "P5": "BLOCK",
+  "P6": "HUMAN_ONLY",
+  "restricted": [
+    "medication",
+    "diagnosis",
+    "medical",
+    "burnout",
+    "surgery",
+    "religion",
+    "religious",
+    "sexual orientation",
+    "union membership",
+    "ethnicity",
+    "psychologist",
+    "pregnancy",
+    "trade secret",
+    "forged",
+    "stole",
+    "bribed"
+  ],
+  "instruction_patterns": [
+    "ignore.{0,60}(instructions|rules|privacy)",
+    "(reveal|include|publish|send|print).{0,60}(real name|full name|identity|contact list|reporter's name)",
+    "system note to the ai"
+  ],
+  "topics": [
+    [
+      "fraud",
+      "invoices?|ledger|fraud",
+      "The report mentions a concern about invoicing or financial records."
+    ],
+    [
+      "safety",
+      "emergency exits?|fire exits?",
+      "The report mentions an emergency exit."
+    ],
+    [
+      "safety",
+      "safety|forklifts?|dust extraction",
+      "The report mentions a workplace safety concern."
+    ],
+    [
+      "corruption",
+      "corruption|bribery|kickbacks?",
+      "The report mentions a possible corruption concern."
+    ],
+    [
+      "discrimination",
+      "discrimination|discriminated",
+      "The report mentions possible discrimination."
+    ],
+    [
+      "harassment",
+      "harassment|harassed|bullying",
+      "The report mentions possible workplace harassment."
+    ],
+    [
+      "other",
+      "second sign-?off|second approv(?:er|al)|four-eyes",
+      "The report mentions an approval given without the required second sign-off."
+    ],
+    [
+      "other",
+      "misconduct|workplace concern|policy violation|workplace complaint",
+      "The reporter raises a workplace concern for review."
+    ]
+  ],
+  "person_observations": [
+    [
+      "other",
+      "approv\\w*\\b.{0,160}?without (?:the )?required second sign-?off",
+      "{person} allegedly approved a purchase without the required second sign-off."
+    ]
+  ]
+}
