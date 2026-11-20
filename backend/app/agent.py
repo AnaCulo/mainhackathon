@@ -20,7 +20,7 @@ REPORT_PROMPT = (
 )
 VOICE_PROMPT = (
     "You assist a workplace reporter. A human will assess the allegations. Return exactly "
-    "one question from allowed_questions that best addresses the screened history. No other text or actions."
+    "one ID from open_questions. Output only the ID."
 )
 
 

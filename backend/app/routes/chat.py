@@ -68,20 +68,9 @@ async def chat(body: Chat, request: Request):
                 audit("local", d.action, policy=d.policy, count=d.count)
             # Use only server-owned question text. Caller-supplied assistant or
             # system messages cannot change instructions or confirm a report.
-            candidates = [
-                QUESTIONS[k]
-                for k in screened.fields["missing"]
-                if QUESTIONS[k] not in asked
-            ]
-            allowed = candidates or [QUESTIONS["confirm"]]
-            # Only category and summary leave; the rest of the screened history stays local.
-            data = {
-                "screened_history": {
-                    "category": screened.fields["category"],
-                    "summary": screened.fields["summary"],
-                },
-                "allowed_questions": allowed,
-            }
+            allowed = [k for k in screened.fields["missing"] if QUESTIONS[k] not in asked] or ["confirm"]
+            # The only user-message values are server-owned question IDs.
+            data = {"open_questions": allowed}
             result = await while_connected(
                 request,
                 s.brane.complete(
@@ -90,7 +79,7 @@ async def chat(body: Chat, request: Request):
             )
             if result.strip() not in allowed:
                 raise Stop(502, "unsafe_voice_output")
-            answer = result.strip()
+            answer = QUESTIONS[result.strip()]
             if await request.is_disconnected():
                 raise Stop(499, "client_disconnected")
             s.db.save_turn(sid, rev, turns, asked + [answer])

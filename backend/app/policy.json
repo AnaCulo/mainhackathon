@@ -1,5 +1,5 @@
 {
-  "version": "synthetic-intake-4",
+  "version": "synthetic-intake-5",
   "P1": "PROTECT",
   "P2": "PROTECT",
   "P3": "LOCAL_ONLY",
@@ -9,25 +9,39 @@
   "restricted": [
     "medication",
     "diagnosis",
-    "medical",
     "burnout",
     "surgery",
-    "religion",
-    "religious",
-    "sexual orientation",
-    "union membership",
+    "sexual\\ orientation",
+    "union\\ membership",
     "ethnicity",
     "psychologist",
     "pregnancy",
-    "trade secret",
-    "forged",
+    "trade\\ secret",
     "stole",
-    "bribed"
+    "bribed",
+    "medical (?:condition|history|leave|records?|certificate|appointment|evidence)",
+    "forged(?! ahead\\b)",
+    "religious (?:beliefs?|views|affiliation)",
+    "(?:my|his|her|their) religion",
+    "cancer",
+    "chemotherapy",
+    "pregnant",
+    "wheelchair",
+    "disability",
+    "disabled",
+    "diagnosed",
+    "depression",
+    "anxiety (?:disorder|medication)",
+    "sick leave",
+    "therapy",
+    "therapist"
   ],
   "instruction_patterns": [
-    "ignore.{0,60}(instructions|rules|privacy)",
-    "(reveal|include|publish|send|print).{0,60}(real name|full name|identity|contact list|reporter's name)",
-    "system note to the ai"
+    "\\b(?:ignore|disregard|forget|override)\\b.{0,40}\\b(?:all|any|previous|prior|above|earlier|your|system)\\b.{0,25}\\b(?:instructions?|rules|prompts?|guidance|policies)\\b",
+    "\\b(?:you are now|act as|enter)\\b.{0,30}\\b(?:developer|admin|debug|jailbreak) mode\\b",
+    "\\b(?:output|print|reveal|repeat|include|publish|send)\\b.{0,40}\\b(?:original report|full report|real name|full name|identity|contact list|reporter's name|system prompt)\\b",
+    "system note to the ai",
+    "^(?:please )?(?:ignore|override) (?:the |your )?privacy rules\\b"
   ],
   "topics": [
     [
@@ -74,16 +88,22 @@
       "other",
       "misconduct|workplace concern|policy violation|workplace complaint",
       "The reporter raises a workplace concern for review."
+    ],
+    [
+      "other",
+      "pallets were stolen",
+      "The reporter raises a workplace concern for review."
     ]
   ],
   "offence_patterns": [
     "\\b(?:fake|faked|fabricated|false|falsified|fraudulent)\\s+(?:\\w+\\s+){0,2}(?:invoices?|records?|payments?)\\b",
     "\\b(?:embezzl\\w*|stealing|kickback to|falsif(?:y|ying|ied)|defraud\\w*)\\b",
     "\\b(?:sent|diverted|routed|paid)\\b.{0,65}\\b(?:relative|spouse|brother|sister|personal account)\\b",
-    "\\b(?:committed|perpetrated|engaged in)\\s+(?:invoice |financial )?(?:fraud|bribery|theft)\\b"
+    "\\b(?:committed|perpetrated|engaged in)\\s+(?:invoice |financial )?(?:fraud|bribery|theft)\\b",
+    "\\bchange the delivery dates on\\b.{0,35}\\bcustoms declarations\\b"
   ],
   "identifying_context": [
-    "\\b(?:only|sole|single)\\b.{0,60}\\b(?:shift|technician|driver|operator|employee|supervisor|analyst)\\b",
+    "\\b(?:i am|i['’]m|i was|as)\\s+(?:the\\s+)?(?:only|sole|single|one)\\b.{0,60}\\b(?:shift|technician|driver|operator|employee|supervisor|analyst|woman|man|person)\\b",
     "\\b(?:tiny|small|satellite) (?:office|depot|branch)\\b.{0,100}\\b(?:shift|[0-9]{1,2}:[0-9]{2})\\b",
     "\\b(?:night shift|[0-9]{1,2}:[0-9]{2})\\b.{0,100}\\b(?:tiny|small) (?:office|depot|branch)\\b"
   ]

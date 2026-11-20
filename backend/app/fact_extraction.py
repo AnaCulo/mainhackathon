@@ -463,7 +463,7 @@ def extract_local_facts(text: str, screened: Screened) -> FactReview:
                 }
             )
     if not facts or all(f.kind == "available" for f in facts):
-        raise Stop(422, "local_review_required")
+        raise Stop(422, "local_review_required", next((d.policy for d in screened.decisions), "P5"))
     missing = [
         key
         for key, known in (

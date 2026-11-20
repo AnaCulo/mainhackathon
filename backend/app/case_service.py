@@ -52,9 +52,7 @@ async def submit(state, rid, key, text, identities, source, reporter_mode, *, vo
         return (HeldCase if "hold_reason" in cached else Case).model_validate(cached)
     review = None
     try:
-        screened = screen(text, identities, allow_incomplete=True)
-        for d in screened.decisions:
-            audit("local", d.action, policy=d.policy, count=d.count)
+        screened = screen(text, identities, allow_incomplete=True, audit=audit)
         review = extract_local_facts(text, screened)
         local_decisions = list(screened.decisions)
         for policy in review.withheld_policies:

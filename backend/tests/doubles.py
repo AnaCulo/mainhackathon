@@ -106,7 +106,7 @@ class Double:
             del headers["X-Brane-Lane"]
         data = json.loads(body["messages"][1]["content"])
         if body["stream"]:
-            answer = self.answer or data["allowed_questions"][0]
+            answer = self.answer or data["open_questions"][0]
             parts = [(answer[:7], None), (answer[7:], None), ("", "stop")]
             reasoning = {"reasoning": "internal", "reasoning_details": [{"type": "x"}]} \
                 if self.fault == "reasoning" else {}

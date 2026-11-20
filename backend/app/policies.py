@@ -18,6 +18,12 @@ QUESTIONS = {
     "evidence": "What evidence, if any, is available?",
     "confirm": "Would you like to submit this report for human review?",
 }
+RESTRICTED = tuple(re.compile(r"\b(?:" + term + r")\b") for term in RULES["restricted"])
+INSTRUCTIONS = tuple(re.compile(pattern) for pattern in RULES["instruction_patterns"])
+INSTRUCTION_CUE = re.compile(r"\b(?:ignore|disregard|override|system prompt|developer mode)\b")
+SPELLED = re.compile(r"\b[a-z](?:[^\w\s]+[a-z]){2,}\b")
+IDENTIFIERS = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b|\+?\d[\d\s().-]{7,}\d|\b[A-Z]{2,5}-\d{3,}\b")
+
 UNKNOWN = "unknown"
 
 
@@ -104,7 +110,7 @@ def specific_observations(text):
     return found
 
 
-def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> Screened:
+def screen(text: str, identities: list[Identity], *, allow_incomplete=False, audit=None) -> Screened:
     """Construct a new document exclusively from a closed vocabulary.
 
     Name recognition improves local indexing. It never authorizes a span of
@@ -112,15 +118,14 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> 
     """
     text = unicodedata.normalize("NFKC", text).replace("\x00", " ")
     lowered = " ".join(text.casefold().split())
-    if any(re.search(pattern, lowered) for pattern in RULES["instruction_patterns"]):
-        raise Stop(422, "instruction_quarantined", "P4")
-    if any(term in lowered for term in RULES["restricted"]):
-        raise Stop(422, "restricted_material", "P3")
-
-    if any(re.search(pattern, lowered) for pattern in RULES["offence_patterns"]):
-        raise Stop(422, "restricted_material", "P3")
-    if any(re.search(pattern, lowered) for pattern in RULES["identifying_context"]):
-        raise Stop(422, "identifying_context", "P1")
+    instruction_text = SPELLED.sub(lambda m: re.sub(r"[^\w]", "", m[0]), lowered)
+    instruction = any(p.search(instruction_text) for p in INSTRUCTIONS)
+    restricted = any(p.search(lowered) for p in RESTRICTED)
+    offence = any(re.search(p, lowered) for p in RULES["offence_patterns"])
+    identifying = any(re.search(p, lowered) for p in RULES["identifying_context"])
+    instruction_like = bool(INSTRUCTION_CUE.search(instruction_text))
+    if audit and (instruction_like or instruction):
+        audit("local", "instruction_signal", policy="P4", count=1, metadata={"instruction_like": True})
 
     # Explicit identifiers take priority. Infer clear introductions and repeated
     # full names in subject position; omit unresolved details from model input.
@@ -166,6 +171,7 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> 
         rf"(?<!\w)({full_name}),\s+(?:my|the|our|a)\s+[^,.;\n]{{1,60}},\s+{verbs}\b",
         rf"\b(?:I witnessed|I saw|I asked|my manager is)\s+({full_name})\b",
     ]
+    subjects.append(rf"\b(?:my|our) (?:team lead|manager),\s+({full_name}),")
     for pattern in subjects:
         for match in re.finditer(pattern, text, re.IGNORECASE):
             name = match[1]
@@ -173,6 +179,7 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> 
             if (
                 words[0][0].isupper()
                 and words[-1][0].isupper()
+                and words[0].rstrip(".") not in {"Mr", "Ms", "Dr", "Mrs"}
                 and name.casefold() not in bindings
             ):
                 bind("person", [name])
@@ -184,18 +191,44 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> 
             lowered,
         )
     ):
-        raise Stop(422, "restricted_material", "P3")
+        offence = True
+
+    # Resolve short aliases against full names first. Shared surnames are ambiguous.
+    surnames = {}
+    for token, name, kind in list(bindings.values()):
+        if kind != "person" or len(name.split()) < 2:
+            continue
+        surname = name.split()[-1]
+        for short in {surname, surname.split("-")[0]}:
+            if len(short) < 3 or not short[0].isupper():
+                continue
+            if short in surnames and surnames[short][0] != token:
+                raise Stop(422, "ambiguous_identity", "P2")
+            surnames[short] = (token, name, kind)
+    short_aliases = {}
+    for short, binding in surnames.items():
+        # Exclude lower-case email addresses and hyphenated continuations.
+        for alias in re.finditer(r"(?<![\w@.-])(?:(?:Mr|Ms|Mrs|Dr)\.?\s+|[A-Z]\.\s+)?"
+                                 + re.escape(short) + r"(?![\w@-])", text):
+            short_aliases[alias[0]] = binding
+
     mentions = []
     counts = {"P1": 0, "P2": 0}
     mappings = []
+    id_spans = [m.span() for m in IDENTIFIERS.finditer(text)]
+    covered = []
     if bindings:
-        pattern = "|".join(
-            re.escape(n) for n in sorted(bindings, key=len, reverse=True)
-        )
-        for m in re.finditer(r"(?<!\w)(?:" + pattern + r")(?!\w)", text, re.IGNORECASE):
-            binding = bindings.get(m[0].casefold())
-            if binding is None:
-                raise Stop(422, "ambiguous_identity", "P2")
+        variants = [(n, "(?i:" + re.escape(n) + ")") for n in bindings]
+        variants.extend((n, re.escape(n)) for n in short_aliases)
+        alternatives = "|".join(expr for _, expr in sorted(variants, key=lambda item: -len(item[0])))
+        pattern = re.compile(r"(?<![\w@.-])(?:" + alternatives + r")(?![\w@-])")
+
+        def resolve(match):
+            return bindings.get(match[0].casefold()) or short_aliases[match[0]]
+
+        for m in pattern.finditer(text):
+            covered.append(m.span())
+            binding = resolve(m)
             token, _, kind = binding
             if binding not in mappings:
                 mappings.append(binding)
@@ -203,11 +236,19 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> 
             if kind == "person":
                 mentions.append(token)
         # Never classify words inside an identified name as evidence.
-        text = re.sub(
-            r"(?<!\w)(?:" + pattern + r")(?!\w)",
-            lambda m: "\x00" + bindings[m[0].casefold()][0] + "\x00",
-            text, flags=re.IGNORECASE,
-        )
+        text = pattern.sub(lambda m: "\x00" + resolve(m)[0] + "\x00", text)
+    counts["P1"] += sum(not any(a <= start and end <= b for a, b in covered)
+                        for start, end in id_spans)
+    decisions = [decision(p, n) for p, n in counts.items() if n]
+    if audit:
+        for d in decisions:
+            audit("local", d.action, policy=d.policy, count=d.count)
+    if instruction:
+        raise Stop(422, "instruction_quarantined", "P4")
+    if restricted or offence:
+        raise Stop(422, "restricted_material", "P3")
+    if identifying:
+        raise Stop(422, "identifying_context", "P1")
     topics = [
         (cat, summary)
         for cat, pattern, summary in RULES["topics"]
@@ -217,7 +258,7 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> 
     described = {category for category, _ in specific}
     topics = specific + [item for item in topics if item[0] not in described]
     if not topics and not allow_incomplete:
-        raise Stop(422, "local_review_required", "P5")
+        raise Stop(422, "local_review_required", next((d.policy for d in decisions), "P5"))
     category, summary = (
         topics[0]
         if topics
@@ -280,7 +321,6 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> 
         "missing": missing,
         "follow_up": [QUESTIONS[k] for k in missing],
     }
-    decisions = [decision(p, n) for p, n in counts.items() if n]
     for d in decisions:
         if d.action == "BLOCK":
             raise Stop(422, "identity_withheld", d.policy)
