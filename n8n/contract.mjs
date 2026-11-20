@@ -15,7 +15,15 @@ export function validate(b,key,now) {
   if (!arr(b.decisions,d=>exact(d,['policy','action','count']) && Object.hasOwn(d,'count'))) reject();
   const pythonWire=b.decisions.some(d=>d.policy==='P6' && d.action==='HUMAN_ONLY');
   const actions={P1:'PROTECT',P2:'PROTECT',P5:'ALLOW',P6:pythonWire?'HUMAN_ONLY':'HUMAN'};
-  const validCount=d=>['P5','P6'].includes(d.policy) ? d.count===(pythonWire?null:1) : Number.isSafeInteger(d.count) && d.count>0;
+  // Python also records that a financial detail stayed local, or that a
+  // combination of identifying details was withheld, without an occurrence count.
+  if (pythonWire) actions.P3='LOCAL_ONLY';
+  const validCount=d=>{
+    if (d.policy==='P3') return pythonWire && d.count===null;
+    if (d.policy==='P1' && pythonWire && d.count===null) return true;
+    if (['P5','P6'].includes(d.policy)) return d.count===(pythonWire?null:1);
+    return Number.isSafeInteger(d.count) && d.count>0;
+  };
   if (!b.decisions.every(d=>Object.hasOwn(actions,d.policy) && actions[d.policy]===d.action && validCount(d)) ||
       new Set(b.decisions.map(d=>d.policy)).size!==b.decisions.length ||
       !['P5','P6'].every(p=>b.decisions.some(d=>d.policy===p)) ||

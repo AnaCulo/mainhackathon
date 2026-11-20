@@ -124,7 +124,19 @@ class Double:
                 headers={**headers, "content-type": "text/event-stream"},
                 text="\n\n".join(lines) + "\n\n",
             )
-        content = self.answer if self.answer is not None else json.dumps(data["draft"])
+        facts = sorted(data["facts"], key=lambda f: f["kind"] == "available")[:3]
+        questions = sorted(data["question_ids"], key=lambda k: k != "evidence")[:2]
+        content = (
+            self.answer
+            if self.answer is not None
+            else json.dumps(
+                {
+                    "category": facts[0]["category"],
+                    "selected_fact_ids": [f["fact_id"] for f in facts],
+                    "follow_up_question_ids": questions,
+                }
+            )
+        )
         return httpx.Response(
             200,
             headers=headers,

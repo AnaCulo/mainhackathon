@@ -9,6 +9,7 @@ import pytest
 from app.agent import parse_case, report_messages
 from app.brane_client import BraneClient
 from app.config import Settings
+from app.fact_extraction import extract_local_facts
 from app.policies import screen
 
 from .doubles import CONTROL
@@ -31,9 +32,9 @@ async def test_live_governed_control():
         assert adapter.configured, (
             "Configure approved tenant and pin its reviewed policy"
         )
-        safe = screen(CONTROL, [])
+        safe = extract_local_facts(CONTROL, screen(CONTROL, [])).approved
         result = await adapter.complete(report_messages(safe), rid, audit)
-        assert parse_case(result, safe).category == "safety"
+        assert parse_case(result, safe)[0].category == "safety"
     assert any(
         source == "gateway" and action == "ALLOW" for source, action, _ in events
     )
@@ -88,3 +89,29 @@ async def test_live_nonexecuting_repeated_contact_preview():
         else:
             assert route in {"local", "refuse"} and not outgoing
     print("Non-executing synthetic contact preview ID", rid)
+
+
+@pytest.mark.skipif(
+    os.getenv("RUN_LIVE_BRANE") != "1", reason="requires approved live tenant"
+)
+@pytest.mark.asyncio
+async def test_live_safety_fact_selection():
+    text = "Two emergency exits were blocked by pallets last week. I have three photographs."
+    package = extract_local_facts(text, screen(text, [])).approved
+    rid = str(uuid4())
+    events = []
+
+    def audit(source, action, **kwargs):
+        events.append((source, action))
+
+    async with httpx.AsyncClient(trust_env=False) as http:
+        adapter = BraneClient(Settings.load(), http)
+        result = await adapter.complete(report_messages(package), rid, audit)
+    extraction, choice = parse_case(result, package)
+    assert extraction.category == "safety" and "F001" in choice.selected_fact_ids
+    assert (
+        "two emergency exits" in extraction.summary
+        and "last week" in extraction.summary
+    )
+    assert ("gateway", "ALLOW") in events
+    print("Live synthetic fact synthesis request ID", rid)

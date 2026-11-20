@@ -42,6 +42,7 @@ def decision(policy, count=None):
 class Screened:
     fields: dict
     observations: list[tuple[str, str]]
+    specific: list[tuple[str, str]]
     mentions: list[str]
     decisions: list[Decision]
     mappings: list[tuple[str, str, str]]
@@ -116,6 +117,11 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> 
     if any(term in lowered for term in RULES["restricted"]):
         raise Stop(422, "restricted_material", "P3")
 
+    if any(re.search(pattern, lowered) for pattern in RULES["offence_patterns"]):
+        raise Stop(422, "restricted_material", "P3")
+    if any(re.search(pattern, lowered) for pattern in RULES["identifying_context"]):
+        raise Stop(422, "identifying_context", "P1")
+
     # Explicit identifiers take priority. Infer clear introductions and repeated
     # full names in subject position; omit unresolved details from model input.
     bindings = {}
@@ -171,6 +177,14 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> 
             ):
                 bind("person", [name])
 
+    if re.search(r"\b(?:fraud|bribery|theft|corruption)\b", lowered) and (
+        any(kind == "person" for _, _, kind in bindings.values())
+        or re.search(
+            r"\b(?:director|manager|supervisor|colleague|committing|accused|relative)\b",
+            lowered,
+        )
+    ):
+        raise Stop(422, "restricted_material", "P3")
     mentions = []
     counts = {"P1": 0, "P2": 0}
     mappings = []
@@ -270,5 +284,5 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False) -> 
     for d in decisions:
         if d.action == "BLOCK":
             raise Stop(422, "identity_withheld", d.policy)
-    observations = list(dict.fromkeys(topics)) or [(category, summary)]
-    return Screened(fields, observations, mentions, decisions, mappings)
+    observations = list(dict.fromkeys(topics))
+    return Screened(fields, observations, specific, mentions, decisions, mappings)

@@ -57,7 +57,7 @@ async def chat(body: Chat, request: Request):
             try:
                 screened = screen("\n".join(turns), [], allow_incomplete=True)
             except Stop as exc:
-                if exc.policy in {"P3", "P4"}:
+                if exc.policy in {"P1", "P2", "P3", "P4"}:
                     s.db.save_turn(sid, rev, turns, asked, frozen=2)
                 raise
             for d in screened.decisions:

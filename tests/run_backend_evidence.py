@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 BACKEND = ROOT / "backend"
 sys.path.insert(0, str(BACKEND))
 from app.agent import report_messages  # noqa: E402
+from app.fact_extraction import extract_local_facts  # noqa: E402
 from app.policies import screen  # noqa: E402
 from app.security import Stop  # noqa: E402
 
@@ -39,7 +40,8 @@ results = []
 for case in json.loads((ROOT / "data" / "synthetic_reports.json").read_text(encoding="utf-8"))["cases"]:
     text = case["report"] + ("\n\n" + case["evidence"] if case.get("evidence") else "")
     try:
-        msgs = report_messages(screen(text, []))
+        screened = screen(text, [], allow_incomplete=True)
+        msgs = report_messages(extract_local_facts(text, screened).approved)
         outbound = "\n\n".join(m["content"] for m in msgs)
     except Stop:
         outbound = None

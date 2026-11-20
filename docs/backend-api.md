@@ -35,7 +35,9 @@ Text is required, nonblank and at most 16,000 characters. Source defaults to tex
 }
 ```
 
-Case IDs are opaque strings. Category is one of fraud, harassment, corruption, safety, discrimination or other. Time is UTC at intake. Persons are case-scoped pseudonyms. The reporter token designates the role even for anonymous intake. P1/P2 PROTECT counts reflect local occurrences. Full source-level evidence lives in audit_events. The case remains awaiting human review even when a webhook succeeds.
+Case IDs are opaque strings. Category is one of fraud, harassment, corruption, safety, discrimination or other. Time is UTC at intake. Persons are case-scoped pseudonyms. The reporter token designates the role even for anonymous intake. P1/P2 PROTECT counts reflect local occurrences. The audit table records decisions. Original text and extraction provenance reside in encrypted local case fields. The case remains awaiting human review even when a webhook succeeds.
+
+Summaries may include reported counts, coarse timing and evidence availability from the approved fact package. A neutral invoice discrepancy is categorised as other. The fraud category requires a supported reported concern. P3 LOCAL_ONLY may appear on a successful case when independent process facts pass and financial details are retained locally. A P1 combination generalisation can have a null count. The model’s fact IDs, question choices and source offsets are private backend interfaces. [Synthesis contract](fact-synthesis.md)
 
 ## POST /reports/clarify
 
