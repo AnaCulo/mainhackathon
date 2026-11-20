@@ -3,3 +3,6 @@
 !.env.example
 *.sqlite*
 node_modules/
+__pycache__/
+.DS_Store
+test_evidence_run.csv
