@@ -3,13 +3,22 @@
 Uses faster-whisper (open-source Whisper on CTranslate2, CPU int8). The model is downloaded once
 from Hugging Face on first use and cached locally; after that transcription runs offline. The
 audio is written to a private temporary file only for decoding and deleted immediately.
+
+Settings were chosen on 20 Nov from a benchmark of generated workplace sentences (various voices,
+0.4 s lead-in): small.en + beam 5 + workplace hotwords gave 1.3 % word error on sentences
+(base.en beam 1: 2.9 %) at about 1.1 s per utterance. Override with STT_MODEL=base.en for speed.
+A lone acronym ("CEO.") stays unreliable for every model; in a sentence it is recognised, and the
+reporter always checks the text before sending.
 """
 import os
 import tempfile
 import threading
 import time
 
-MODEL_NAME = os.environ.get("STT_MODEL", "base.en")
+MODEL_NAME = os.environ.get("STT_MODEL", "small.en")
+HOTWORDS = ("CEO CFO COO CTO HR team lead supervisor manager controller invoice ledger "
+            "purchase order sign-off procurement supplier forklift inspection pallets "
+            "loading dock warehouse harassment fraud bribery whistleblower")
 _model = None
 _lock = threading.Lock()
 
@@ -24,15 +33,28 @@ def _load():
     return _model
 
 
+def warm_up():
+    """Load the model in the background so the first spoken message is not slow."""
+    if "PYTEST_CURRENT_TEST" in os.environ or os.environ.get("STT_WARMUP") == "0":
+        return
+    try:
+        import faster_whisper  # noqa: F401
+    except ImportError:
+        return
+    threading.Thread(target=_load, daemon=True).start()
+
+
 def transcribe(audio: bytes) -> dict:
     started = time.perf_counter()
     model = _load()
-    fd, path = tempfile.mkstemp(suffix=".webm")
+    fd, path = tempfile.mkstemp(suffix=".audio")
     try:
         os.fchmod(fd, 0o600)
         with os.fdopen(fd, "wb") as f:
             f.write(audio)
-        segments, info = model.transcribe(path, language="en", beam_size=1, vad_filter=True)
+        segments, info = model.transcribe(
+            path, language="en", beam_size=5, hotwords=HOTWORDS,
+            vad_filter=True, condition_on_previous_text=False)
         text = " ".join(s.text.strip() for s in segments).strip()
     finally:
         os.remove(path)

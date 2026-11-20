@@ -97,7 +97,7 @@ a { color: var(--accent); }
     <div id="chat" aria-live="polite"></div>
     <div id="talkBox" hidden>
       <button id="talk" type="button">Hold to talk</button>
-      <div class="hint">Hold the button (or the space bar) while speaking. Your words appear below to check before sending.</div>
+      <div class="hint">Hold the button (or the space bar) while speaking, in full sentences. Your words appear below to check and correct before sending. The microphone is only on while Talk is selected.</div>
     </div>
     <div class="composer">
       <textarea id="input" rows="2" placeholder="Describe what happened — roles are enough, no names needed"></textarea>
@@ -271,31 +271,77 @@ function setMode(mode) {
   state.mode = mode;
   $("modeText").setAttribute("aria-pressed", mode === "text"); $("modeTalk").setAttribute("aria-pressed", mode === "talk");
   $("talkBox").hidden = mode !== "talk";
+  if (mode === "talk") openMic(); else closeMic();
 }
 
-let recorder = null, chunks = [];
-async function startTalk() {
-  if (recorder || state.held) return;
+// Microphone: opened once when Talk mode is switched on (so the first word is never lost to the
+// permission/start-up delay), with a rolling 0.5 s pre-roll kept only in this tab's memory.
+// Nothing is sent anywhere until the button is released, and then only to 127.0.0.1.
+const mic = { stream: null, ctx: null, node: null, ring: [], ringLen: 0, take: null, live: false };
+const PRE_ROLL = 0.5, POST_ROLL = 0.3;
+async function openMic() {
+  if (mic.stream) return;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    recorder = new MediaRecorder(stream); chunks = [];
-    recorder.ondataavailable = (e) => chunks.push(e.data);
-    recorder.onstop = async () => {
-      stream.getTracks().forEach((t) => t.stop());
-      const blob = new Blob(chunks, { type: recorder.mimeType }); recorder = null;
-      $("talk").textContent = "Transcribing on this device…";
-      const r = await api("/ui/stt", await blob.arrayBuffer(), true);
-      $("talk").textContent = "Hold to talk";
-      if (r.text) {
-        $("input").value = r.text;
-        $("input").dataset.spoken = `${r.audio_seconds}s of audio transcribed by ${r.engine} in ${r.ms} ms. Recording deleted: ${r.audio_deleted}. Audio sent off this device: none.`;
-        $("input").focus();
-      }
+    mic.stream = await navigator.mediaDevices.getUserMedia({ audio: {
+      channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    mic.ctx = new AudioContext();
+    const source = mic.ctx.createMediaStreamSource(mic.stream);
+    mic.node = mic.ctx.createScriptProcessor(2048, 1, 1);
+    mic.node.onaudioprocess = (e) => {
+      const block = new Float32Array(e.inputBuffer.getChannelData(0));
+      if (mic.take) { mic.take.push(block); return; }
+      mic.ring.push(block); mic.ringLen += block.length;
+      while (mic.ringLen - mic.ring[0].length > PRE_ROLL * mic.ctx.sampleRate) mic.ringLen -= mic.ring.shift().length;
     };
-    recorder.start(); $("talk").classList.add("recording"); $("talk").textContent = "Listening… release to stop";
-  } catch (e) { $("talk").textContent = "Microphone unavailable"; }
+    source.connect(mic.node); mic.node.connect(mic.ctx.destination);
+    $("talk").textContent = "Hold to talk"; $("talk").disabled = false;
+  } catch (e) { $("talk").textContent = "Microphone unavailable"; $("talk").disabled = true; }
 }
-function stopTalk() { if (recorder && recorder.state === "recording") { recorder.stop(); $("talk").classList.remove("recording"); } }
+function closeMic() {
+  if (!mic.stream) return;
+  mic.stream.getTracks().forEach((t) => t.stop()); mic.ctx.close();
+  Object.assign(mic, { stream: null, ctx: null, node: null, ring: [], ringLen: 0, take: null, live: false });
+}
+function wav16k(blocks, rate) {
+  const total = blocks.reduce((n, b) => n + b.length, 0), data = new Float32Array(total);
+  let o = 0; for (const b of blocks) { data.set(b, o); o += b.length; }
+  const step = rate / 16000, n = Math.floor(total / step), pcm = new Int16Array(n);
+  for (let i = 0; i < n; i++) {             // average each window: simple low-pass + resample
+    const a = Math.floor(i * step), z = Math.min(total, Math.floor((i + 1) * step));
+    let sum = 0; for (let j = a; j < z; j++) sum += data[j];
+    const v = Math.max(-1, Math.min(1, sum / Math.max(1, z - a)));
+    pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
+  }
+  const buf = new ArrayBuffer(44 + pcm.byteLength), dv = new DataView(buf);
+  const str = (off, t) => [...t].forEach((c, i) => dv.setUint8(off + i, c.charCodeAt(0)));
+  str(0, "RIFF"); dv.setUint32(4, 36 + pcm.byteLength, true); str(8, "WAVEfmt ");
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, 16000, true); dv.setUint32(28, 32000, true); dv.setUint16(32, 2, true);
+  dv.setUint16(34, 16, true); str(36, "data"); dv.setUint32(40, pcm.byteLength, true);
+  new Int16Array(buf, 44).set(pcm);
+  return buf;
+}
+async function startTalk() {
+  if (mic.live || state.held) return;
+  await openMic(); if (!mic.stream) return;
+  if (mic.ctx.state === "suspended") await mic.ctx.resume();
+  mic.take = mic.ring.slice(); mic.live = true;   // include the pre-roll
+  $("talk").classList.add("recording"); $("talk").textContent = "Listening… release to stop";
+}
+function stopTalk() {
+  if (!mic.live) return;
+  mic.live = false; $("talk").classList.remove("recording"); $("talk").textContent = "Transcribing on this device…";
+  setTimeout(async () => {                      // keep the last syllable
+    const blocks = mic.take || []; mic.take = null; mic.ring = []; mic.ringLen = 0;
+    const r = await api("/ui/stt", wav16k(blocks, mic.ctx ? mic.ctx.sampleRate : 48000), true);
+    $("talk").textContent = "Hold to talk";
+    if (r.text) {
+      $("input").value = ($("input").value ? $("input").value + " " : "") + r.text;
+      $("input").dataset.spoken = `${r.audio_seconds}s of audio transcribed by ${r.engine} in ${r.ms} ms. Recording deleted: ${r.audio_deleted}. Audio sent off this device: none.`;
+      $("input").focus();
+    } else if (r.status !== 200) { $("talk").textContent = "Transcription failed, try again"; }
+  }, POST_ROLL * 1000);
+}
 
 $("send").onclick = send;
 $("input").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });

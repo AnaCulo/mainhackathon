@@ -81,6 +81,9 @@ def internal(request):
 
 @router.get("/", response_class=HTMLResponse)
 async def page():
+    from ..stt import warm_up  # preload the local speech model in the background
+
+    warm_up()
     return HTMLResponse((STATIC / "index.html").read_text(encoding="utf-8"),
                         headers={"Cache-Control": "no-store"})
 

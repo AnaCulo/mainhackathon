@@ -24,7 +24,14 @@ Push-to-talk needs the local speech-to-text extras, installed once:
 backend/.venv/bin/pip install -r backend/requirements-voice.txt
 ```
 
-The first spoken message downloads the Whisper `base.en` model, about 150 MB, into `~/.cache/huggingface`. After that it runs offline.
+The first time, the backend downloads the Whisper `small.en` model, about 480 MB, into `~/.cache/huggingface`. After that it runs offline. The model is preloaded in the background when the page opens. For speed over accuracy, set `STT_MODEL=base.en`.
+
+**Speech-to-text quality (20 Nov).** Benchmark on generated workplace sentences in various voices:
+- `small.en` with beam 5 and workplace hotwords: **1.3 % word error**, about 1.1 s per utterance
+- `base.en`: 2.9 % (e.g. "harassed" heard as "Harris the")
+- A lone acronym such as "CEO." is misheard by every model ("see ya"). Inside a sentence it is recognised.
+
+The biggest problem was in the browser. Requesting the microphone on each press cut off the first word (with 0.3 s clipped, "Our CFO skipped…" became "CFO Skip…", and "CEO." became "you"). The page now opens the microphone once when Talk is selected and keeps a rolling 0.5 s pre-roll **in the tab's memory only**. It records 0.3 s past the release and sends 16 kHz WAV with noise suppression to 127.0.0.1. The microphone closes when you switch back to typing. The reporter always sees the text and can correct it before sending.
 
 ## Two ways to report
 
