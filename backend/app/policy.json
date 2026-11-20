@@ -100,7 +100,8 @@
     "\\b(?:embezzl\\w*|stealing|kickback to|falsif(?:y|ying|ied)|defraud\\w*)\\b",
     "\\b(?:sent|diverted|routed|paid)\\b.{0,65}\\b(?:relative|spouse|brother|sister|personal account)\\b",
     "\\b(?:committed|perpetrated|engaged in)\\s+(?:invoice |financial )?(?:fraud|bribery|theft)\\b",
-    "\\bchange the delivery dates on\\b.{0,35}\\bcustoms declarations\\b"
+    "\\bchange the delivery dates on\\b.{0,35}\\bcustoms declarations\\b",
+    "\\bsteering (?:contracts|orders|business) to\\b[^.!?\\n]{0,60}\\b(?:brother|sister|relative|in-law|spouse|partner)\\b"
   ],
   "identifying_context": [
     "\\b(?:i am|i['’]m|i was|as)\\s+(?:the\\s+)?(?:only|sole|single|one)\\b.{0,60}\\b(?:shift|technician|driver|operator|employee|supervisor|analyst|woman|man|person)\\b",

@@ -242,7 +242,8 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False, aud
     decisions = [decision(p, n) for p, n in counts.items() if n]
     if audit:
         for d in decisions:
-            audit("local", d.action, policy=d.policy, count=d.count)
+            audit("local", d.action, policy=d.policy, count=d.count,
+                  metadata={"distinct_tokens": len(set(mentions))} if d.policy == "P2" else {})
     if instruction:
         raise Stop(422, "instruction_quarantined", "P4")
     if restricted or offence:

@@ -252,6 +252,26 @@
       "must_keep": [
         "dust extraction"
       ]
+    },
+    {
+      "id": "E6",
+      "same_person_mentions": 5,
+      "scenario": "Edge case · Person-linked possible offence",
+      "policy": "P2 PROTECT + P3 LOCAL ONLY",
+      "title": "Procurement allegation involving a relative",
+      "channel": "web",
+      "report": "Pieter Oosterhout-Demo, the head of procurement, has been steering contracts to his brother-in-law's company. Pieter Oosterhout-Demo signed all three purchase orders himself. When I asked about it, Pieter Oosterhout-Demo told me to mind my own business. Colleagues say Pieter Oosterhout-Demo has done this before.",
+      "evidence": "Forwarded email, 12 Oct: 'Approved. Please process quickly, no second quote needed. Regards, Pieter Oosterhout-Demo, Head of Procurement, pieter.oosterhout@example-bv.test'",
+      "expected": "P3 hold with a receipt and five P2 mentions for one person. Only receipt metadata goes to the register.",
+      "allowed_outcomes": [
+        "local",
+        "refused"
+      ],
+      "must_not_egress": [
+        "Pieter Oosterhout-Demo",
+        "pieter.oosterhout@example-bv.test"
+      ],
+      "must_keep": []
     }
   ],
   "_matrix": "Policy IDs and expected decisions follow docs/policy-matrix.md (Person A, 20 Nov). Allowed outcomes describe the BRANE-level gate; the matrix's stricter application-level rules (e.g. P3 material never reaching hosted BRANE) are tested against the backend."

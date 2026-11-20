@@ -45,3 +45,18 @@ def test_timeout_receipt_is_durable(setup, submit):
     assert response.status_code == 503 and case["status"] == "held_unverified"
     assert case["hold_reason"] == "gateway_timeout" and case["case_id"] == double.deliveries[0]["case_id"]
     assert not any(url.endswith("/chat/completions") for url, _, _ in double.gateway_requests)
+
+def test_e6_possible_offence_stays_on_intake_host(setup, submit, caplog):
+    _, double, db = setup
+    example = next(x for x in FIXTURES if x["id"] == "E6")
+    r = submit(example["report"] + "\n\n" + example["evidence"])
+    assert r.status_code == 202 and r.json()["policy"] == "P3"
+    assert not double.gateway_requests and double.single_held_delivery
+    with db.connection() as con:
+        rows = con.execute("SELECT policy_id,count,metadata FROM audit_events WHERE action='PROTECT'").fetchall()
+    counts = {row[0]: row[1] for row in rows}
+    assert counts == {"P1":1, "P2":5}
+    assert json.loads(next(row[2] for row in rows if row[0] == "P2"))["distinct_tokens"] == 1
+    for private in example["must_not_egress"]:
+        assert private not in json.dumps(double.deliveries) + r.text + caplog.text
+        assert private.encode() not in db.path.read_bytes()
