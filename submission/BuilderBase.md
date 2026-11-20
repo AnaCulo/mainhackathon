@@ -17,7 +17,7 @@ The team’s open-policy baseline exposed failures on protected details, repeate
 - five mentions of one person become one token
 - an ordinary purchasing breach reaches the cloud as PERSON_01, while a forgery allegation stays local
 
-On the current build, a local hold returns 202. Automation failures retain 5xx. Both register content-free held receipts. The evidence below records earlier builds. A closed voice harness ran the same path live through the voice bridge contract, and an end-to-end ElevenLabs call with generated caller audio passed through ElevenLabs speech recognition, our backend and live BRANE, then filed a case for the handler. ElevenLabs refuses Custom LLM with zero retention, so the published agent keeps transcripts for at most one day; we record this as a product gap. Final team review and the manual timing comparison are pending.
+On the current build, a local hold returns 202. Automation failures retain 5xx. Both register content-free held receipts. Current live evidence for this build is listed in [Evidence status](EVIDENCE_STATUS.md), including the failures we disclose. Older files record earlier builds. A closed voice harness ran the same path live through the voice bridge contract, and an end-to-end ElevenLabs call with generated caller audio passed through ElevenLabs speech recognition, our backend and live BRANE, then filed a case for the handler. ElevenLabs refuses Custom LLM with zero retention, so the published agent keeps transcripts for at most one day. That is why live caller audio stays blocked: the call used generated audio only, and the retention is a product gap that blocks live use ([legal summary](../docs/legal-summary.md)). Final team review and the manual timing comparison are pending.
 
 ## Assets to attach
 

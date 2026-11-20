@@ -1,5 +1,11 @@
 # Buying a confidential reporting channel in the Netherlands
 
+**What the employer pays for.** On labour alone Čulo does not pay for itself: at 12 reports a year it costs €570 more than an internal process, and it breaks even only at 33 reports (see below). The case for buying is legal and confidential:
+- **Deadline compliance.** Every report, including one held for a person, is registered on receipt. The seven-day acknowledgement and three-month feedback clocks never depend on the model succeeding.
+- **Confidentiality towards the AI vendor.** Identities, contact details, health data and person-linked criminal allegations stay on the employer's host. In the 21 Nov live run no protected identifier appeared in any model-bound message (`evidence/backend_run_20261121-002846.json`, `evidence/backend_run_20261121-004849.json`).
+
+Price the pilot against the cost of a missed deadline or an identity leak, not against staff minutes.
+
 **Decision for a pilot, 20 November 2026.** A compliance director at a Dutch employer with 50–249 workers could use Čulo to prepare an unverified brief, register receipt and keep an independent handler’s follow-up visible. The employer still needs a designated handler, an alternate for conflicts and a safe way to reach the reporter. The synthetic prototype can demonstrate that division of work. Procurement for live reports requires additional safeguards.
 
 ## Who buys this
@@ -32,7 +38,7 @@ Under the Dutch Wbk the general threshold is 50 statutory workers. Paid subordin
 | Internal HR or compliance process | 12 reports × (45 min preparation + 30 min review) × €55/hour = **€825/year** | Assumes a restricted intake channel already exists. Training, coverage, ongoing readiness and investigation are additional. Dedicated access, confidentiality and cover during absence still need an owner. |
 | Čulo pilot price hypothesis | €75/month = €900/year plus 12 × (15 min preparation + 30 min review) × €55/hour = **€1,395/year** | Illustrative employer handles 12 reports annually. The 15 minutes include checking omissions and releasing the draft. The handler retains the same 30 minutes of initial review. The demo uses synthetic delivery and text. |
 
-Vendor figures checked 20 November 2026. Loaded HR cost of €55 per hour, case volume and staff times are planning assumptions. Vendor and proposed prices exclude any unpriced services. Under these assumptions the pilot saves 6 staff hours (€330/year) but costs €570 more than the internal option. At 30 minutes saved per case, €900 ÷ €27.50 = 32.7, or **33 cases/year** to cover the fee from labour savings alone. At six cases per year the labour saving falls to €165. Interview buyers about the value of traceable follow-up and the cost of covering absences. [Whistlelink pricing and inclusions](https://www.whistlelink.com/pricing/)
+Vendor figures checked 20 November 2026. Loaded HR cost of €55 per hour, case volume and staff times are planning assumptions. Vendor and proposed prices exclude any unpriced services. Under these assumptions the pilot saves 6 staff hours (€330/year) but costs €570 more than the internal option. At 30 minutes saved per case, €900 ÷ €27.50 = 32.7, or **33 cases/year** to cover the fee from labour savings alone. At six cases per year the labour saving falls to €165. Labour savings therefore do not justify the fee for this employer. The pitch claims deadline compliance and confidentiality instead. Interview buyers about the value of traceable follow-up and the cost of covering absences. [Whistlelink pricing and inclusions](https://www.whistlelink.com/pricing/)
 
 Illustrative annual supplier costs per customer include €120 allocated hosting and encrypted backup, €60 processing, and two support hours at €55 (€110). €900 − €290 = €610 contribution before sales, implementation, incident response, legal review, tax and fixed development. Neither cost nor willingness to pay has been measured. Shared deployment and safeguarding costs can materially change this figure.
 
@@ -51,9 +57,7 @@ For the Netherlands, assume one quarter of the 9,515 firms have an independent h
 
 Use exactly “Two invoice totals differ. The discrepancy appeared on Monday. The ledger has both entries.” Start on release of the text to the preparer or submission to the endpoint. Finish when the assigned handler can open the case. Check the handler view for the reported discrepancy, Monday timeline, ledger evidence and a pending human decision, with no invented person or conclusion.
 
-**Observed automated runs, n = 2:** 143 ms and 86 ms (range 86–143 ms). Each started before POST /reports and ended after fetching the authenticated handler page and checking its contents. Both used Person B’s running service, exact-fixture local check/model doubles, the published n8n webhook, and a durable case register. Network services were on the same machine. Excludes drafting the input, notification latency, live BRANE/model latency, human review and a cold production start. The recording follows the 86 ms case. Use `node n8n/walkthrough.mjs` with the demo environment to repeat.
-
-Four later integration regression runs used the same timer and returned 179, 173, 133 and 166 ms. Across all six runs the observed range was 86–179 ms. The pitch and rough video report the two recorded benchmark runs.
+Automated runs against local test doubles (86–179 ms) only checked the plumbing. They exclude BRANE and the model, and they are not compared with a person anywhere.
 
 **Observed live runs through hosted BRANE, n = 4:** **7.62, 6.33, 7.16 and 6.22 s**, range 6.2–7.6 s. The timer and finish line are the same as above. These runs used the Python backend (`backend/app`) with the real BRANE gateway (policy-v2, pinned fingerprint), the real cloud model `openrouter:openai/gpt-6-luna`, the published n8n webhook and the case register, all on one machine apart from BRANE and the model. Every handler view showed every required field:
 - reported fact: *"The report describes a discrepancy between invoice totals."*
@@ -67,7 +71,7 @@ Every trace also records:
 - the completion headers: `Routed-To: cloud`, `Redacted: false`
 - a decision of "investigate", recorded afterwards through the handler form (scripted for evidence; a person clicks it in the demo)
 
-The difference from the 86–179 ms runs is BRANE's preflight checks plus real model latency. **Use these live numbers for any claim about the deployed path.** Evidence: `evidence/live_trace_20261120-172546.json`, `-172635.json`, `-173954.json` and `-174739.json`. The last run used the minimised payload (category and summary only). Repeat with `n8n/demo.sh --trace`, which needs Node 24 and `backend/.env` with the team key and pinned fingerprint.
+**Use these live numbers for any claim about the deployed path.** They are not yet compared with a person: the manual baseline below is still open. Evidence: `evidence/live_trace_20261120-172546.json`, `-172635.json`, `-173954.json` and `-174739.json`. The last run used the minimised payload (category and summary only). Repeat with `n8n/demo.sh --trace`, which needs Node 24 and `backend/.env` with the team key and pinned fingerprint.
 
 **Manual comparison pending.** Run `python3 tests/manual_benchmark.py`, which follows this protocol, times the run and compares it with the live traces. Give the same text to a teammate who has not seen the prepared brief. Supply a blank restricted case form and the same four checks. Have a second person start the timer on release and stop it on successful handler access. Record minutes/seconds, missing facts, any corrections and sample size. Repeat failed quality checks with the clock running. Report observed differences only after this exercise. The 30-minute illustrative saving above is a pricing sensitivity assumption.
 
@@ -76,5 +80,5 @@ The difference from the 86–179 ms runs is BRANE's preflight checks plus real m
 
 | Input | Manual minutes (n, range) | Čulo seconds (n, range) | Quality checks passed |
 | --- | --- | --- | --- |
-| Ledger discrepancy, Monday, ledger entries | TO MEASURE | Historical hosted runs, n = 4, 6.22–7.62 s. Current build TO MEASURE | Historical handler pages showed discrepancy, Monday, ledger evidence and pending human decision. No invented person or conclusion. |
-| Held report with identifying shift details (E1) | TO MEASURE | TO MEASURE | Current local tests check a P1 receipt, register handoff and zero gateway requests. End-to-end timing pending. |
+| Ledger discrepancy, Monday, ledger entries | TO MEASURE (needs two teammates, `tests/manual_benchmark.py`) | Hosted runs, n = 4, 6.22–7.62 s (20 Nov build). This report takes the same fixed-grammar path on the current build | Historical handler pages showed discrepancy, Monday, ledger evidence and pending human decision. No invented person or conclusion. |
+| Held report with identifying shift details (E1) | TO MEASURE (needs two teammates) | Held locally before any BRANE call in the 21 Nov live run. End-to-end timing not recorded | Current local tests check a P1 receipt, register handoff and zero gateway requests. End-to-end timing pending. |

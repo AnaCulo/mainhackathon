@@ -38,7 +38,22 @@
     "(?:trade|labou?r) unions?",
     "union (?:member|members|membership|card|dues|rep|reps|representative|steward|activit\\w*|meetings?|organi[sz]\\w*)",
     "(?:joined|join|joining|in|member of|left) (?:the|a|my|our) union",
-    "unioni[sz]\\w*"
+    "unioni[sz]\\w*",
+    "(?:my|his|her|their) (?:health|illness|condition|treatment|diagnosis|symptoms)",
+    "health (?:condition|issues?|problems?)",
+    "mental health",
+    "ill health",
+    "illness",
+    "chronic(?:ally)? ill",
+    "hospital(?:i[sz]ed|s)?",
+    "time off for (?:my|his|her|their) (?:health|condition|treatment|appointments?)",
+    "ziekte\\w*",
+    "ziekmeld\\w*",
+    "ziek",
+    "medicijn\\w*",
+    "zwanger\\w*",
+    "vakbond\\w*",
+    "therapie"
   ],
   "instruction_patterns": [
     "\\b(?:ignore|disregard|forget|override)\\b.{0,40}\\b(?:all|any|previous|prior|above|earlier|your|system)\\b.{0,25}\\b(?:instructions?|rules|prompts?|guidance|policies)\\b",
@@ -110,12 +125,13 @@
     "\\b(?:sent|diverted|routed|paid)\\b.{0,65}\\b(?:relative|spouse|brother|sister|personal account)\\b",
     "\\b(?:committed|perpetrated|engaged in)\\s+(?:invoice |financial )?(?:fraud|bribery|theft)\\b",
     "\\bchange the delivery dates on\\b.{0,35}\\bcustoms declarations\\b",
-    "\\bsteering (?:contracts|orders|business) to\\b[^.!?\\n]{0,60}\\b(?:brother|sister|relative|in-law|spouse|partner)\\b"
+    "\\bsteering (?:contracts|orders|business) to\\b[^.!?\\n]{0,60}\\b(?:brother|sister|relative|in-law|spouse|partner)\\b",
+    "\\b(?:vervals\\w*|valse? (?:facturen|factuur|handtekening\\w*|bonnen|declaraties)|gestolen|steelt|stal|verduister\\w*|omkop\\w*|steekpenning\\w*|smeergeld|fraudeer\\w*|gefraudeerd)\\b"
   ],
   "identifying_context": [
     "\\b(?:i am|i['’]m|i was|as)\\s+(?:the\\s+)?(?:only|sole|single|one)\\b.{0,60}\\b(?:shift|technician|driver|operator|employee|supervisor|analyst|woman|man|person)\\b",
-    "\\b(?:tiny|small|satellite) (?:office|depot|branch)\\b.{0,100}\\b(?:shift|[0-9]{1,2}:[0-9]{2})\\b",
-    "\\b(?:night shift|[0-9]{1,2}:[0-9]{2})\\b.{0,100}\\b(?:tiny|small) (?:office|depot|branch)\\b",
+    "\\b(?:tiny|small|satellite)(?: [a-z-]+)? (?:office|depot|branch|site|plant)\\b.{0,100}\\b(?:shift|[0-9]{1,2}:[0-9]{2})\\b",
+    "\\b(?:night shift|early shift|late shift|weekend shift|[0-9]{1,2}:[0-9]{2})\\b.{0,100}\\b(?:tiny|small|satellite)(?: [a-z-]+)? (?:office|depot|branch|site|plant)\\b",
     "\\b(?:the|i am the|i['’]m the|as the|being the)\\s+(?:only|sole|single|one and only)\\s+(?:[\\w-]+\\s+){0,3}(?:trainers?|teachers?|instructors?|technicians?|drivers?|operators?|employees?|workers?|supervisors?|analysts?|women|woman|man|men|person|people|nurses?|engineers?|translators?|interpreters?|mechanics?|cleaners?|chemists?|accountants?|electricians?|welders?|planners?|speakers?|members?|one|staff|colleagues?|guards?|pilots?|doctors?|lawyers?|designers?|developers?|programmers?|cooks?|chefs?|forklift)\\b",
     "\\b(?:only|sole)\\b.{0,60}\\bfor (?:over |more than |almost |nearly )?(?:\\d{1,2}|[a-z]+) years\\b",
     "\\b[a-z]+-speaking\\b.{0,40}\\b(?:only|sole|single)\\b|\\b(?:only|sole|single)\\b.{0,40}\\b[a-z]+-speaking\\b"

@@ -44,10 +44,26 @@ def completions(double):
 @pytest.mark.parametrize("text", [
     "The forklift in bay 3 has had broken brakes for two weeks. Management knows but "
     "nobody fixed it. Someone almost got hit on Monday.",
+    "The chemical storage room on the second floor has no working ventilation. The extractor fan "
+    "broke in September and two people got headaches last week.",
+    "Our sales director has been inflating his expense claims for months and finance approves them without checking.",
 ])
-def test_unparsed_reports_are_held_without_egress(setup, submit, text):
+def test_reports_without_topic_keywords_are_summarised(setup, submit, text):
+    # Reviewer feedback: realistic reports outside the fixture vocabulary used to be held unread.
     r = submit(text)
-    assert r.status_code == 202 and r.json()["hold_reason"] == "local_review_required"
+    assert r.status_code == 200, r.json()
+    assert "report" in json.loads(completions(setup[1])[0]["messages"][1]["content"])
+
+
+@pytest.mark.parametrize("text,reason", [
+    ("Mijn leidinggevende heeft handtekeningen vervalst op de inkooporders.", "restricted_material"),
+    ("My manager keeps commenting on my time off for my condition. Also two invoice totals differ.",
+     "restricted_material"),
+    ("Something happened at work.", "local_review_required"),
+])
+def test_offences_health_euphemisms_and_empty_reports_stay_local(setup, submit, text, reason):
+    r = submit(text)
+    assert r.status_code == 202 and r.json()["hold_reason"] == reason
     assert not setup[1].gateway_requests
 
 
@@ -284,3 +300,20 @@ def test_unresolvable_identifier_shapes_go_to_a_person():
     with pytest.raises(Stop) as exc:
         protect("My manager shouts. Reach me on instagram or at 88231 extension 4471 9.", [])
     assert exc.value.reason == "local_review_required"
+
+
+def test_companies_stay_readable_and_roles_survive():
+    # E4: the controller is protected, the supplier company is ordinary context (ORG allow).
+    p = protect("Controller Femke Jansen-Testcase keeps approving invoices from Kantoorpapier Zuid-Demo B.V. "
+                "that look identical. Kantoorpapier Zuid-Demo B.V. is not on our preferred supplier list.", [])
+    assert p.outbound == ("The controller keeps approving invoices from Kantoorpapier Zuid-Demo B.V. that look "
+                          "identical. Kantoorpapier Zuid-Demo B.V. is not on our preferred supplier list.")
+    assert p.new_mappings == [("PERSON_01", "Femke Jansen-Testcase", "person")]
+
+
+def test_nickname_is_bound_to_the_same_person():
+    # E2: "Hanneke, as everyone calls her" is the witness named just before.
+    p = protect("The incident was witnessed by Johanna Bakker-Proef from accounts payable. Hanneke, as everyone "
+                "calls her, also saw the shredded documents.", [])
+    assert {t for t, _, _ in p.new_mappings} == {"PERSON_01"}
+    assert "Hanneke" not in p.outbound and "Johanna" not in p.outbound

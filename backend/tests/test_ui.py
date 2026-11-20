@@ -293,7 +293,7 @@ def test_unified_locality_predicate_for_size_limit():
 def test_turn_reports_whether_the_report_can_be_submitted(local):
     client, _ = local
     sid = str(uuid4())
-    vague = "Our warehouse supervisor told staff to skip the forklift inspection last Tuesday."
+    vague = "Something happened at work."  # too little for any summary
     r = client.post("/ui/turn", json={"session_id": sid, "history": [vague]}).json()
     assert r["status"] == 200 and r["submittable"] is False and r["needs"] == "more_detail"
     r = client.post("/ui/turn", json={"session_id": sid, "history": [
@@ -304,7 +304,7 @@ def test_turn_reports_whether_the_report_can_be_submitted(local):
 def test_submit_precheck_keeps_session_open(local):
     client, double = local
     sid = str(uuid4())
-    vague = "Our warehouse supervisor told staff to skip the forklift inspection last Tuesday."
+    vague = "Something happened at work."  # too little for any summary
     client.post("/ui/turn", json={"session_id": sid, "history": [vague]})
     calls = len(double.requests)
     s = client.post("/ui/submit", json={"session_id": sid}).json()
@@ -343,7 +343,7 @@ def test_submit_gateway_fault_returns_held_receipt(local):
 def test_submit_anyway_registers_held_receipt(local):
     client, double = local
     sid = str(uuid4())
-    vague = "Our warehouse supervisor told staff to skip the forklift inspection last Tuesday."
+    vague = "Something happened at work."  # too little for any summary
     client.post("/ui/turn", json={"session_id": sid, "history": [vague]})
     assert client.post("/ui/submit", json={"session_id": sid}).json()["error"] == "needs_more_detail"
     calls = [u for u, _, _ in double.requests if u.endswith("/chat/completions")]

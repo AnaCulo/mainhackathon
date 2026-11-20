@@ -106,9 +106,9 @@ def test_model_reads_multi_topic_report_and_chooses_category(setup, submit):
     assert submit(text).json()["category"] == "harassment"
 
 
-def test_unknown_narrative_held_before_egress(setup, submit):
-    r = submit("The person from the tiny satellite office knows more.")
-    assert r.status_code == 202 and r.json()["hold_reason"] == "local_review_required"
+def test_reporter_pinpointing_office_and_shift_is_held_before_egress(setup, submit):
+    r = submit("I work the night shift at the tiny satellite office and my supervisor shouts at me.")
+    assert r.status_code == 202 and r.json()["hold_reason"] == "identifying_context"
     assert not setup[1].gateway_requests
 
 
@@ -160,9 +160,11 @@ def test_policy_description_alone_does_not_assert_a_breach(submit):
 
 
 def test_job_title_alone_does_not_force_a_safety_category(setup, submit):
+    # No local topic is forced: the model reads the protected text and chooses.
     response = submit("I drive a forklift. Some pallets went missing.")
-    assert response.status_code == 202
-    assert setup[1].gateway_requests == []
+    assert response.status_code == 200
+    sent = [b for url, b, _ in setup[1].requests if url.endswith("/chat/completions")]
+    assert json.loads(sent[0]["messages"][1]["content"]) == {"report": "I drive a forklift. Some pallets went missing."}
 
 
 def test_procurement_report_preserves_attribution_and_omits_identifying_context(setup, submit):

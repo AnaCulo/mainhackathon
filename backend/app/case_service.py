@@ -24,16 +24,21 @@ def brief_for(extraction, facts=None):
     return Brief(facts=facts, timeline=timeline, evidence=evidence)
 
 
-# Topics whose details the team keeps local (P3 financial values, supplier
-# codes and periods; approval-requirement mentions that must not be tied to a
-# named person). These stay on the fixed-grammar path.
-LOCAL_TOPICS = {"invoicing", "duplicate_invoicing", "fraud", "approval_process"}
+# Topics with team-reviewed fixed wording: an approval requirement must not be
+# tied to whoever is named nearby, and duplicate postings keep the reviewed
+# T1 sentence. Everything else that is only a canned topic line is summarised.
+GRAMMAR_TOPICS = {"duplicate_invoicing", "approval_process"}
 
 
 def _use_narrative(review):
-    """True when the fixed grammar produced nothing more than a canned topic line."""
+    """True when the fixed grammar produced nothing more than canned topic lines.
+
+    Amounts, dates and references are withheld by narrative.protect, so a
+    topic-only invoicing report is summarised like any other; only reports the
+    grammar fully recognised (handler sentences, counted events) stay on it.
+    """
     return all(row["method"] == "screened_topic" for row in review.provenance) and all(
-        f.kind == "topic" and not f.handler_sentence and f.topic not in LOCAL_TOPICS
+        f.kind == "topic" and not f.handler_sentence and f.topic not in GRAMMAR_TOPICS
         for f in review.approved.facts
     )
 
@@ -101,8 +106,15 @@ async def submit(state, rid, key, text, identities, source, reporter_mode, *, vo
         facts = None
         # A report the grammar cannot parse at all raises local_review_required
         # and is held for a person below; it never reaches the model.
-        review = extract_local_facts(text, screened)
-        if _use_narrative(review):
+        try:
+            review = extract_local_facts(text, screened)
+        except Stop as exc:
+            # No topic keyword matched. Local screening has already passed, so
+            # the model may still read a protected copy (held if not eligible).
+            if exc.reason != "local_review_required":
+                raise
+            review = None
+        if review is None or _use_narrative(review):
             extraction, synthesis = await _narrative(state, rid, audit, text, screened)
             local_decisions = list(screened.decisions)
             private_detail = {**extraction.model_dump(), "synthesis": synthesis}

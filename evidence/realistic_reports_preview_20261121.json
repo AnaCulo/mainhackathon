@@ -1,0 +1,82 @@
+{
+  "purpose": "Reviewer's realistic non-fixture reports: local outcome and BRANE preview of the redacted outbound text. Preview only (executeCompletion false); no model call.",
+  "recorded_at": "2026-11-20T23:43:28+00:00",
+  "backend_policy_version": "synthetic-intake-6",
+  "brane_policy_sha256": "e32261674b2ef8ced8b000da97bcdb0f2bb83683115e70830ba2e45ce868ca23",
+  "results": [
+    {
+      "synthetic_report": "Our sales director has been inflating his expense claims for months. He submits taxi receipts for trips he never took and claims client dinners that were really with friends. Finance approves them without checking.",
+      "local_outcome": "eligible for summary",
+      "outbound_report": "Our sales director has been inflating his expense claims for months. He submits taxi receipts for trips he never took and claims client dinners that were really with friends. Finance approves them without checking.",
+      "brane_preview": {
+        "user_message": {
+          "route": "local",
+          "detected": [],
+          "semantic": [
+            "CRIMINAL_OFFENCE_ALLEGATION"
+          ],
+          "payload_identical": false
+        },
+        "combined": {
+          "route": "local",
+          "detected": [],
+          "semantic": [
+            "CRIMINAL_OFFENCE_ALLEGATION"
+          ],
+          "payload_identical": false
+        }
+      },
+      "backend_result": "held for a person at BRANE preview (nothing sent)"
+    },
+    {
+      "synthetic_report": "The chemical storage room on the second floor has no working ventilation. The extractor fan broke in September and the room smells strongly of solvent. Two people got headaches last week. Facilities says it is not a priority.",
+      "local_outcome": "eligible for summary",
+      "outbound_report": "The chemical storage room on the second floor has no working ventilation. The extractor fan broke in September and the room smells strongly of solvent. Two people got headaches last week. Someone says it is not a priority.",
+      "brane_preview": {
+        "user_message": {
+          "route": "cloud",
+          "detected": [],
+          "semantic": [],
+          "payload_identical": true
+        },
+        "combined": {
+          "route": "cloud",
+          "detected": [],
+          "semantic": [],
+          "payload_identical": true
+        }
+      },
+      "backend_result": "preview clean: backend proceeds to the model summary"
+    },
+    {
+      "synthetic_report": "Mijn leidinggevende heeft handtekeningen vervalst op de inkooporders. Ik heb het gezien in de map van vorige week.",
+      "local_outcome": "held locally: restricted_material (P3)",
+      "backend_result": "held for a person before BRANE"
+    },
+    {
+      "synthetic_report": "jan de vries from logistics keeps making comments about my body and touching my shoulder when nobody is looking. it has happened four times this month.",
+      "local_outcome": "eligible for summary",
+      "outbound_report": "Someone from logistics keeps making comments about my body and touching my shoulder when nobody is looking. It has happened four times this month.",
+      "brane_preview": {
+        "user_message": {
+          "route": "cloud",
+          "detected": [],
+          "semantic": [],
+          "payload_identical": true
+        },
+        "combined": {
+          "route": "cloud",
+          "detected": [],
+          "semantic": [],
+          "payload_identical": true
+        }
+      },
+      "backend_result": "preview clean: backend proceeds to the model summary"
+    },
+    {
+      "synthetic_report": "My manager keeps commenting on my time off for my condition and says people like me slow the team down. Also two invoice totals differ in the March ledger.",
+      "local_outcome": "held locally: restricted_material (P3)",
+      "backend_result": "held for a person before BRANE"
+    }
+  ]
+}

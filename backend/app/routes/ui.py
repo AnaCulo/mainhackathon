@@ -33,6 +33,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
 
 from ..brane_client import outage_request
 from ..config import MODEL
+from .. import narrative
 from ..fact_extraction import extract_local_facts
 from ..locality import is_local, same_origin
 from ..models import Text
@@ -133,7 +134,7 @@ def session_state(db, sid):
     return SESSION_STATES[frozen] if frozen in (0, 1, 2) else None, revision
 
 
-def readiness(turns):
+def readiness(turns, summaries=True):
     """Dry run of the local part of finalize (screening + local fact extraction), with no
     BRANE call, no audit and no state change. Returns None when a case can be drafted, else the
     content-free reason the finalize path would refuse with. Callers act only on NEEDS_DETAIL:
@@ -141,7 +142,15 @@ def readiness(turns):
     text = "\n".join(turns)
     try:
         screened = screen(text, [], allow_incomplete=True)
-        review = extract_local_facts(text, screened)
+        try:
+            review = extract_local_facts(text, screened)
+        except Stop as exc:
+            # Mirrors case_service.submit: an unparsed report can still be
+            # summarised from a protected copy when it has enough substance.
+            if exc.reason != "local_review_required" or not summaries or not narrative.eligible(text):
+                raise
+            narrative.protect(screened.protected or text, screened.mentions)
+            return None
         if any(RULES[p] == "BLOCK" for p in review.withheld_policies):
             return "restricted_material"
     except Stop as exc:
@@ -232,7 +241,7 @@ async def turn(body: Turn, request: Request):
     if status == 200 and state == "open":
         try:
             turns, _, _, _ = db.session(sid)
-            ready = readiness(turns) if turns else "unknown_session"
+            ready = readiness(turns, request.app.state.settings.narrative) if turns else "unknown_session"
         except Exception:
             log.exception("ui_readiness_failed")
             ready = "readiness_unknown"
@@ -265,7 +274,7 @@ async def submit(body: Submit, request: Request):
         # would be refused anyway, so the reporter can still add detail (nothing is frozen).
         try:
             turns, _, _, _ = db.session(sid)
-            ready = readiness(turns)
+            ready = readiness(turns, request.app.state.settings.narrative)
         except Exception:
             log.exception("ui_readiness_failed")
             ready = None  # let finalize decide

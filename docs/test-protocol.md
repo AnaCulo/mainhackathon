@@ -42,7 +42,7 @@ This runner observes the **direct BRANE route** using synthetic source text. The
 | E2 | Witness named, then called by her nickname | P2 PROTECT | both names map to one token |
 | E3 | "Knee surgery" in a witness statement | P3 LOCAL ONLY | `local` or 422 |
 | E4 | Person protected, supplier company needed | P2 PROTECT + P5 ALLOW | person protected, company name still readable |
-| E5 | Speech-to-text: spelled-out name, phone number as words (from a generated fictional clip) | P1/P2 PROTECT | every spoken form protected; since Run 4 the report is held for a person (see below) |
+| E5 | Speech-to-text: spelled-out name, phone number as words (from a generated fictional clip) | P1/P2 PROTECT | every spoken form protected; summarised in Run 5, held in Run 4 by a BRANE job-title detection (see below) |
 
 ### P3 paired fixtures: policy breach vs criminal allegation (Person A, 20 Nov)
 Naming someone does not by itself keep a report local. P2 replaces the name with a case-scoped placeholder and removes identifying context. P3 applies separately to the *content* of the allegation:
@@ -128,7 +128,20 @@ What changed from Run 3:
 - **E5 is no longer summarised. A person reads it.** The backend's redacted text withheld the spoken phone number ("(phone withheld)") and replaced every spoken and spelled form of the name. BRANE's preview then flagged the job title "shift manager" as PERSON. The backend sends nothing unless the preview is clean, so the report was held. No name, spelling or digit reached BRANE's completion endpoint or the model. This is a usefulness loss, not a leak.
 - The same detector behaviour held three extra spoken/identifier probes (spoken phone, spoken e-mail, staff number) after full redaction, because "my shift lead" / "my supervisor" were flagged as PERSON. Lowercase, Chinese and Cyrillic names, social handles, a street address with city, "named …" introductions and plain harassment reports produced summaries. The audited outbound text of every probe contained none of the private values.
 
-**Product gap for the AI-Z desk:** BRANE's PERSON detector (GLiNER) labels job titles such as "shift manager", "my shift lead" and "my supervisor" as names, and it does so inconsistently between near-identical sentences. We would like role nouns excluded from PERSON, or a per-tenant allowlist of role terms.
+### Run 5: realistic reports summarised (21 Nov, 00:48), `evidence/backend_run_20261121-004849.json`
+This is the same build plus two changes. First, any report that passes local screening is now summarised, not only reports containing a topic keyword. Second, company names stay readable and a nickname is linked to the person named before it.
+
+| Result | Cases |
+|---|---|
+| Cases created | T1, T3, P3a, **E2, E4, E5** |
+| Held locally before BRANE | T2, T4, T5, P3b, E1, E3, E6 |
+
+- **E2:** Both "Johanna Bakker-Proef" and "Hanneke" map to one local token, and the model reads "someone from accounts payable". This closes the alias gap BRANE showed on its own.
+- **E4:** The controller's name is protected, the supplier "Kantoorpapier Zuid-Demo B.V." stays readable, and the amount is withheld. This is the outcome the fixture asks for.
+- **E5:** It produced a summary this time. BRANE did not flag "shift manager" as it did in Run 4, so its PERSON detector is not deterministic. In both runs the model-bound text contained no name, spelling or digit.
+- A scripted check of all 13 model-bound messages found none of the protected names, numbers or addresses.
+
+ BRANE's PERSON detector (GLiNER) labels job titles such as "shift manager", "my shift lead" and "my supervisor" as names, and it does so inconsistently between near-identical sentences. We would like role nouns excluded from PERSON, or a per-tenant allowlist of role terms.
 
 ### Findings to take to the AI-Z desk
 1. **The live headers say `X-Brane-Pii-Detected: false` for every request under the open policy,** even when `/policy/test` detects PERSON, EMAIL, PHONE and HEALTH_DATA in the same text. We tested four message layouts (user only, system then user, user then system, merged), and all four gave the same result. The likely cause is that detection is skipped when everything is `allow`. **Re-check after the policy is set.** If live calls still don't detect, that is a bypass.

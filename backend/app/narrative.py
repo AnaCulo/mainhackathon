@@ -81,7 +81,10 @@ class NarrativeBrief(Strict):
 
 
 # Spoken digits as speech-to-text writes them ("oh six one two ...").
-_DIGIT_WORD = r"(?:oh|zero|nought|nil|one|two|three|four|five|six|seven|eight|nine|double|triple|\d+)"
+_DIGIT_WORD = (
+    r"(?:oh|zero|nought|nil|one|two|three|four|five|six|seven|eight|nine|double|triple"
+    r"|nul|een|twee|drie|vier|vijf|zes|zeven|acht|negen|dubbel|\d+)"
+)
 _DIGITS = rf"{_DIGIT_WORD}(?:[\s,-]+{_DIGIT_WORD})*\b"
 _ID_CUE = r"staff|employee|personnel|payroll|badge|worker|locker|clock(?:ing)?|membership|id"
 _STREET_NL = r"straat|weg|laan|plein|gracht|kade|dijk|singel|steeg|markt|strasse|straße|gasse|platz|allee"
@@ -158,7 +161,20 @@ _SAFE_CAPS = {
     "accounts", "payable", "receivable", "finance", "procurement", "purchasing", "logistics",
     "warehouse", "sales", "legal", "compliance", "operations", "security", "maintenance",
     "production", "department", "team", "office", "manager", "supervisor", "director",
+    "controller", "foreman", "accountant", "auditor", "treasurer", "clerk", "officer", "planner",
+    "buyer", "coordinator", "engineer", "technician", "driver", "operator", "lead", "head",
 }
+# Job titles that may open a sentence right before a name: "Controller Femke Jansen".
+_ROLE_TITLES = (
+    "controller|foreman|accountant|auditor|treasurer|clerk|officer|planner|buyer|coordinator|"
+    "engineer|technician|driver|operator|manager|supervisor|director|lead|head"
+)
+# Registered companies are ordinary context (team policy: ORG allow), not people.
+_COMPANY = re.compile(
+    r"(?:[A-Z][\w'’&-]*\s+){1,5}(?:B\.V\.|N\.V\.|BV|NV|GmbH|Ltd\.?|Inc\.?|LLC|plc|AG|S\.A\.|SE)(?!\w)"
+)
+# "Hanneke, as everyone calls her" is the person mentioned just before.
+_NICKNAME = r"(?:,\s*|\s+)(?:as|what|like)\s+(?:everyone|everybody|people|we|they|colleagues|the team|staff)\s+calls?\s+(?:her|him|them)\b"
 _WORD = r"[A-Z][\w'’-]*"
 # Name particles: "Ruud van Leeuwen", "van der Berg".
 _PARTICLE = r"(?:van|de|der|den|von|ten|ter|al|da|di|du|le|la)"
@@ -216,7 +232,7 @@ sara sarah sebastian sem sergio simon sofia sophie stefan stephanie susan thijs 
 tom wei willem yusuf zoe
 """.split())
 _NAME_INTRO = re.compile(
-    r"\b(?:named|name is|name's|names are|goes by|known as|surname is)\s+([^\W\d_]+(?:[\s-]+[^\W\d_]+)?)",
+    r"\b(?:named|name is|name's|names are|goes by|known as|surname is|heet|naam is)\s+([^\W\d_]+(?:[\s-]+[^\W\d_]+)?)",
     re.IGNORECASE,
 )
 _NOT_SURNAME = frozenset("""
@@ -234,6 +250,8 @@ spelled spelt spelling written pronounced like
 def _lower_names(text):
     """Lowercase or non-Latin names the capitalisation rules cannot see."""
     for m in _NAME_INTRO.finditer(text):
+        if _TOKEN.match(text, m.start(1)):
+            continue
         words = [w for w in re.split(r"[\s-]+", m[1]) if w.casefold() not in _NOT_SURNAME]
         if words and m[1].split()[0].casefold() not in _NOT_SURNAME:
             yield " ".join(m[1].split()[: len(words)])
@@ -247,6 +265,10 @@ def _lower_names(text):
             yield m[1]
     for m in _NON_LATIN.finditer(text):
         yield m[0]
+    # A nickname is a name wherever it stands: "Hanneke, as everyone calls her".
+    for m in re.finditer(rf"(?<![\w'’])([^\W\d_][\w'’-]*){_NICKNAME}", text, re.IGNORECASE):
+        if m[1].casefold() not in _NOT_SURNAME and not _TOKEN.fullmatch(m[1]):
+            yield m[1]
     # Names spelled out letter by letter: "r u u d", "j. s. m. i. t. h".
     for m in re.finditer(r"(?<![\w'’])(?:[A-Za-z][\s.-]+){2,}[A-Za-z](?!\w)\.?", text):
         if not re.fullmatch(r"[\s.]*(?:a|i)(?:[\s.]+(?:a|i))*[\s.]*", m[0], re.IGNORECASE):
@@ -308,12 +330,26 @@ def protect(protected: str, mentions: list[str]) -> Protected:
     next_person = max(numbers, default=0) + 1
     names, new = {}, []
     # Longest first, so "Tom" after "Tom Becker" resolves to the same person.
+    companies = []
+
+    def keep_company(m):
+        companies.append(m[0])
+        return f"\x01{len(companies) - 1}\x01"
+
+    text = _COMPANY.sub(keep_company, text)
     found = dict.fromkeys([*_name_runs(text), *_lower_names(text)])
     for name in sorted(found, key=lambda n: -len(n.split())):
         key = name.casefold()
         if key in names:
             continue
         same = next((t for n, t in names.items() if key in n.split() and len(name.split()) == 1), None)
+        if not same and re.search(rf"(?<!\w){re.escape(name)}{_NICKNAME}", text, re.IGNORECASE):
+            first = text.casefold().find(key)
+            earlier = [(text.casefold().rfind(n, 0, first), t) for n, t in names.items()
+                       if -1 < text.casefold().rfind(n, 0, first)]
+            if earlier:
+                same = max(earlier)[1]
+                new.append((same, name, "person"))
         if same:
             names[key] = same
             continue
@@ -330,6 +366,7 @@ def protect(protected: str, mentions: list[str]) -> Protected:
             text,
             flags=re.IGNORECASE,
         )
+    text = re.sub(r"\x01(\d+)\x01", lambda m: companies[int(m[1])], text)
     tokens = set(mentions) | {t for t, _, _ in new} | {"REPORTER_01"}
     outbound = to_narrative(text)
     if _residual_risk(outbound):
@@ -356,6 +393,13 @@ def to_narrative(text):
         "", text, flags=re.IGNORECASE,
     )
     text = re.sub(r"\bREPORTER_01\b", "the reporter", text)
+    # "Controller PERSON_01 keeps" -> "The controller keeps"
+    text = re.sub(
+        rf"(?:^|(?<=[.!?]\s))(?P<role>{_ROLE_TITLES})\s+(?:PERSON|REPORTER)_\d{{2,}}\b",
+        lambda m: "The " + m["role"].lower(), text, flags=re.IGNORECASE,
+    )
+    # "Hanneke, as everyone calls her," adds nothing once the name is a role.
+    text = re.sub(rf"(?<=_\d\d){_NICKNAME},?", "", text, flags=re.IGNORECASE)
     # "a foreman named PERSON_01" -> "a foreman PERSON_01", then role only.
     text = re.sub(
         r"\b(?:named|called|known as|goes by)\s+(?=PERSON_\d{2,})", "", text, flags=re.IGNORECASE
@@ -400,7 +444,11 @@ def to_narrative(text):
 
     text = _TOKEN.sub(plain, text)
     text = re.sub(r"\s+([,.;!?])", r"\1", text)
-    return re.sub(r"(^|[.!?]\s+)([a-z])", lambda m: m[1] + m[2].upper(), text.strip())
+    text = re.sub(r"\(\((\w+ withheld)\)\)", r"(\1)", text)
+    # Capitalise sentence starts, but not after a company suffix such as "B.V.".
+    return re.sub(
+        r"(^|(?:(?<![A-Z]\.[A-Z])\.|[!?])\s+)([a-z])", lambda m: m[1] + m[2].upper(), text.strip()
+    )
 
 
 def from_narrative(text):

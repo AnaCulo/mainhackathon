@@ -1,5 +1,7 @@
 # Legal research for a Dutch whistleblower intake agent
 
+**Short version:** [one-page legal summary](legal-summary.md).
+
 **Assessment date: 20 November 2026.** This review covers an employer's internal reporting procedure in the Netherlands. The hackathon tests fictional reports. The deployment analysis below assumes a Dutch employer chooses the purposes, service providers and recipients. No employer mandate, sector, executed processor contract, production configuration or test result was supplied.
 
 ## A. Executive summary

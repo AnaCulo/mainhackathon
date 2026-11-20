@@ -1,17 +1,31 @@
 # Evidence status
 
-**STATUS: LIVE RUN on synthetic-intake-6 (21 Nov, 00:28)**: [backend_run_20261121-002846.json](../evidence/backend_run_20261121-002846.json). E5 is now held for a person at the BRANE preview (job title flagged as PERSON, nothing sent); see `docs/test-protocol.md`, Run 4. The paragraphs below describe the earlier state.
+**STATUS: CURRENT LIVE EVIDENCE on synthetic-intake-6 (21 Nov 2026).** The backend stamps its policy version into every new run file, and the BRANE policy fingerprint is pinned (`e3226167…ca23`, policy-v2).
 
-The hosted BRANE key and reviewed policy fingerprint were unavailable for this build. The backend columns in both hand-in CSVs retain their historical observations. Local integration tests use simulated BRANE and webhook responses. A new live run must verify the E6 result, outbound content, completion headers, held-register delivery and human review link before replacing the historical evidence.
+| Current evidence | What it shows |
+| --- | --- |
+| [backend_run_20261121-004849.json](../evidence/backend_run_20261121-004849.json) | All fixtures through the backend, hosted BRANE and the real model, final code. Cases: T1, T3, P3a, E2, E4, E5. Held locally: T2, T4, T5, P3b, E1, E3, E6. No protected value in any model-bound message. |
+| [backend_run_20261121-002846.json](../evidence/backend_run_20261121-002846.json) | Earlier the same night, before realistic-report routing: E5 held at the BRANE preview because BRANE flagged "shift manager" as PERSON. |
+| [realistic_reports_preview_20261121.json](../evidence/realistic_reports_preview_20261121.json) | Five non-fixture reports from a reviewer. Two reach a summary. BRANE's CRIMINAL_OFFENCE_ALLEGATION rule keeps an expense-fraud report local. Local rules hold a Dutch forgery report (P3) and a health euphemism (P3). Preview only, no model call. |
+| Live adapter tests, 21 Nov | `RUN_LIVE_BRANE=1 pytest tests/test_live_brane.py`: 3/3 passed. |
 
-The inherited evidence set is catalogued under the historical synthetic-intake-3 baseline. Direct gateway runs bypassed FastAPI. Individual records identify the executed path. Where the file lacks a policy version, the catalogue label does not establish which code ran.
+**Not live.** The demo video (`pitch/Culo-demo.mp4`) was recorded on 20 Nov with the legacy Node adapter and a simulated gateway. It is identified as historical wherever it is shown. Timing for a manual baseline has not been measured.
 
-| Evidence file | Recorded path and version | Current for synthetic-intake-5? |
+**Known failures, disclosed.** These come from direct BRANE gate runs without our backend (`evidence/run_20261120-165852.json`, `docs/test-protocol.md`):
+- **E2:** BRANE did not link a nickname to the same person (two placeholders for one witness). The backend binds aliases locally before sending.
+- **E5:** BRANE replaced only part of a spoken phone number ("oh six one two three four[PHONE_REF_1] six seven eight"). The backend withholds spoken numbers locally. On 21 Nov E5 was held in one run because BRANE flagged the job title "shift manager" as PERSON. It produced a summary in the next run, so the detector is not deterministic.
+- **T4:** The preview flagged the embedded instruction (route local), but the live completion routed the same text to the cloud with action allow. The backend quarantines instructions locally (P4) before any BRANE call.
+
+Everything below is the historical catalogue from 20 Nov. Those files are labelled with the synthetic-intake-3 baseline and do not record which runtime version ran.
+
+| Evidence file | Recorded path and version | Current for synthetic-intake-6? |
 | --- | --- | --- |
 | [backend_run_20261120-172943.json](../evidence/backend_run_20261120-172943.json) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |
 | [backend_run_20261120-175038.json](../evidence/backend_run_20261120-175038.json) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |
 | [backend_run_20261120-204543.json](../evidence/backend_run_20261120-204543.json) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |
-| [backend_run_20261121-002846.json](../evidence/backend_run_20261121-002846.json) | synthetic-intake-6, live BRANE policy-v2 | Current |
+| [backend_run_20261121-002846.json](../evidence/backend_run_20261121-002846.json) | synthetic-intake-6 before routing change, live BRANE policy-v2 | Superseded |
+| [realistic_reports_preview_20261121.json](../evidence/realistic_reports_preview_20261121.json) | synthetic-intake-6, live BRANE policy-v2, preview only | Current |
+| [backend_run_20261121-004849.json](../evidence/backend_run_20261121-004849.json) | synthetic-intake-6, live BRANE policy-v2 | Current |
 | [elevenlabs_call_20261120-195233.json](../evidence/elevenlabs_call_20261120-195233.json) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |
 | [elevenlabs_call_20261120-195233_agent.wav](../evidence/elevenlabs_call_20261120-195233_agent.wav) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |
 | [elevenlabs_call_20261120-200549.json](../evidence/elevenlabs_call_20261120-200549.json) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |

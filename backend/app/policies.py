@@ -161,7 +161,7 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False, aud
     for entity in identities:
         bind(entity.kind, entity.aliases)
     for match in re.finditer(
-        r"(?i)\bmy name is\s+([^,.;\n]{1,100}?)(?=\s+and\b|[,.;\n]|$)", text
+        r"(?i)\b(?:my name is|mijn naam is|ik heet)\s+([^,.;\n]{1,100}?)(?=\s+and\b|[,.;\n]|$)", text
     ):
         bind("reporter", [match[1].strip()])
     for match in re.finditer(r"(?i)\bmy email is\s+([^\s,;]+@[^\s,;]+)", text):
