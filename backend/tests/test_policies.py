@@ -85,7 +85,7 @@ def test_model_receives_only_pseudonyms_for_five_mentions(setup, submit):
     ]
     sent = json.loads(requests[0]["messages"][1]["content"])
     # Only fact descriptors and permitted question IDs are needed for selection.
-    assert set(sent) == {"facts", "question_ids"}
+    assert set(sent) == {"facts", "open_questions"}
     assert all(set(f) <= {"fact_id", "kind", "topic", "category"} for f in sent["facts"])
     assert "John" not in json.dumps(requests) and "PERSON_01" not in json.dumps(requests)
 

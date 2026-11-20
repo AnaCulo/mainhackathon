@@ -95,12 +95,12 @@ def test_safety_detail(setup, submit):
     )
     assert double.deliveries == [case]
     package = wire(double)
-    assert set(package) == {"facts", "question_ids"}
+    assert set(package) == {"facts", "open_questions"}
     assert package["facts"] == [
         {"fact_id": "F001", "category": "safety", "kind": "obstruction"},
         {"fact_id": "F002", "category": "other", "kind": "available"},
     ]
-    assert package["question_ids"] == ["participants"]
+    assert package["open_questions"] == ["participants"]
     assert SAFETY not in json.dumps([b for _, b, _ in double.requests])
     detail, _ = private(db)
     assert (
@@ -270,7 +270,7 @@ def test_local_known_time_is_distinct_from_external_missing(setup, submit):
     assert submit(FINANCE).status_code == 200
     detail, _ = private(setup[2])
     assert detail["approximate_time"] == "october" and "when" not in detail["missing"]
-    assert "when" not in wire(setup[1])["question_ids"]
+    assert "when" not in wire(setup[1])["open_questions"]
 
 
 def test_coarse_location_omitted_from_combination(setup, submit):

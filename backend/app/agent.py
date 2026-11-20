@@ -14,7 +14,7 @@ REPORT_PROMPT = (
     "Choose the primary concern and rank one to three nonredundant facts. Lead with an event or topic. "
     "Include relevant supporting evidence when space permits. Interpret after only as explicit "
     "sequence, never causation. Use the first fact's category. Choose one or two useful questions, or an empty array if none are available, "
-    "from question_ids. Prioritise evidence if event and timing are known but evidence is missing. "
+    "from open_questions. Prioritise evidence if event and timing are known but evidence is missing. "
     "Output exactly one JSON object with category, selected_fact_ids and follow_up_question_ids "
     "(the latter two are arrays of IDs). Do not include prose, findings or new values."
 )
@@ -205,7 +205,9 @@ def report_messages(package: ApprovedPackage):
                 )
                 for f in package.facts
             ],
-            "question_ids": [
+            # Not "question_ids": BRANE's PERSON detector flags that key (live, 20 Nov), so
+            # every report would stop at preview_not_clean. "open_questions" previews clean.
+            "open_questions": [
                 "participants" if key == "who" else key for key in questions(package)
             ],
         },

@@ -125,7 +125,7 @@ class Double:
                 text="\n\n".join(lines) + "\n\n",
             )
         facts = sorted(data["facts"], key=lambda f: f["kind"] == "available")[:3]
-        questions = sorted(data["question_ids"], key=lambda k: k != "evidence")[:2]
+        questions = sorted(data["open_questions"], key=lambda k: k != "evidence")[:2]
         content = (
             self.answer
             if self.answer is not None
