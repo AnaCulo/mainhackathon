@@ -1,5 +1,5 @@
 {
-  "version": "synthetic-intake-2",
+  "version": "synthetic-intake-3",
   "P1": "PROTECT",
   "P2": "PROTECT",
   "P3": "LOCAL_ONLY",
@@ -30,6 +30,11 @@
     "system note to the ai"
   ],
   "topics": [
+    [
+      "fraud",
+      "invoice totals? differ|totals? differ|discrepanc(?:y|ies)",
+      "The report describes a discrepancy between invoice totals."
+    ],
     [
       "fraud",
       "invoices?|ledger|fraud",

@@ -22,20 +22,24 @@ VOICE_PROMPT = (
 )
 
 
-# BRANE's PERSON detector flags our case tokens (PERSON_01, REPORTER_01) as names, which
-# makes every preview with a pseudonym unclean. Its own placeholder form (<PERSON_1>)
-# previews clean, so tokens are rendered that way only for the gateway and translated
-# back before validation. Case JSON, n8n and the local mapping keep PERSON_01.
+# BRANE's PERSON detector flags our case tokens as names, depending on context. Live
+# previews (20 Nov, policy-v2) flagged PERSON_01 always, and <PERSON_1>, P-01, REF-01 and
+# CASE-REF-01 in some fixtures or once the system prompt is in the same scan. #P01 previewed
+# clean in every fixture, per message and combined. Case tokens are therefore rendered as
+# #P01 (persons) / #R01 (reporter) only for the gateway and translated back before
+# validation. Case JSON, n8n and the local mapping keep PERSON_01 / REPORTER_01.
 _CASE_TOKEN = re.compile(r"\b(PERSON|REPORTER)_(\d{2})\b")
-_GATEWAY_TOKEN = re.compile(r"<(PERSON|REPORTER)_(\d{1,2})>")
+_GATEWAY_TOKEN = re.compile(r"#([PR])(\d{2})\b")
+_TO = {"PERSON": "P", "REPORTER": "R"}
+_FROM = {v: k for k, v in _TO.items()}
 
 
 def to_gateway(text):
-    return _CASE_TOKEN.sub(lambda m: f"<{m[1]}_{int(m[2])}>", text)
+    return _CASE_TOKEN.sub(lambda m: f"#{_TO[m[1]]}{m[2]}", text)
 
 
 def from_gateway(text):
-    return _GATEWAY_TOKEN.sub(lambda m: f"{m[1]}_{int(m[2]):02}", text)
+    return _GATEWAY_TOKEN.sub(lambda m: f"{_FROM[m[1]]}_{m[2]}", text)
 
 
 def parse_case(content, screened):

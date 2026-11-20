@@ -18,6 +18,7 @@ def test_control(setup, submit):
         "received_at",
         "decisions",
         "brane_status",
+        "brief",
     }
     assert case["category"] == "safety" and case["persons"] == []
     assert (
@@ -106,3 +107,18 @@ def test_unknown_narrative_held_before_egress(setup, submit):
     r = submit("The person from the tiny satellite office knows more.")
     assert r.status_code == 422 and r.json()["error"] == "local_review_required"
     assert not setup[1].requests
+
+
+def test_invoice_discrepancy_brief_has_fact_timeline_evidence(submit):
+    # Manual-benchmark fixture: the handler brief must carry all four fields.
+    r = submit(
+        "Two invoice totals differ. The discrepancy appeared on Monday. The ledger has both entries."
+    )
+    assert r.status_code == 200
+    case = r.json()
+    assert case["brief"] == {
+        "facts": ["The report describes a discrepancy between invoice totals."],
+        "timeline": ["Reported time: Monday."],
+        "evidence": ["Ledger entries (original held locally)."],
+    }
+    assert " ".join(case["brief"]["facts"]) == case["summary"]

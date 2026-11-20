@@ -43,8 +43,10 @@ Supply the team key, approved policy export/fingerprint and current tenant trace
 
 ## Pseudonym tokens at the gateway (20 Nov, policy-v2)
 
-BRANE's PERSON detector flags the case tokens `PERSON_01` and `REPORTER_01` as names. The backend releases only previews with zero detections, so any report with a recognised person used to stop with `preview_not_clean`. BRANE's own placeholder form previews clean on the live tenant. `agent.to_gateway` therefore renders tokens as `<PERSON_1>` / `<REPORTER_1>` in outbound messages, and `agent.from_gateway` converts the model's answer back before schema and grounding validation. Case JSON, n8n and the local mapping keep `PERSON_01`.
+BRANE's PERSON detector flags the case tokens `PERSON_01` and `REPORTER_01` as names. The backend releases only previews with zero detections, so any report with a recognised person used to stop with `preview_not_clean`. In repeated live previews `<PERSON_1>`, `P-01`, `REF-01` and `CASE-REF-01` were also flagged in some fixtures, or once the system prompt was scanned together with the user message. `#P01` previewed clean in every fixture, per message and combined. `agent.to_gateway` therefore renders tokens as `#P01` / `#R01` in outbound messages, and `agent.from_gateway` converts the model's answer back before schema and grounding validation. Case JSON, n8n and the local mapping keep `PERSON_01`.
 
 Ordinary policy breaches linked to one accused person now produce a tokenised cloud draft, following the policy matrix's P2/P5 row (*"PERSON_01 allegedly approved a purchase without the required second sign-off."*). Criminal-offence wording stays local under P3. Live run on policy-v2 against the synthetic fixtures:
 - T1, T3, P3a, E1, E4 and E5 returned cases.
 - T2, T4, T5, P3b, E2 and E3 were held locally.
+
+**Combined preview.** BRANE scans a live completion as one conversation, and context changes detection. On 20 Nov every P3a message previewed clean on its own, but the live call came back `Action: placeholder, Redacted: true`. The backend rejected the result (`unverified_completion_headers`), but a cloud call had already happened. The preflight now also previews all messages joined. A case like that stops at the preview, before any model call.

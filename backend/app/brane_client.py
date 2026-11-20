@@ -97,11 +97,33 @@ class BraneClient:
                 and preview["promptInjection"]["detected"] is False
             ):
                 raise Stop(503, "preview_not_clean")
+        # Live completions are scanned as one conversation, and context changes detection
+        # (20 Nov: every message of P3a previewed clean alone, but the live call was
+        # redacted). Preview the combined text too, so that case stops before any model call.
+        combined = "\n\n".join(message["content"] for message in messages)
+        if len(messages) > 1:
+            preview = await self._json(
+                "POST",
+                "/policy/test",
+                headers,
+                {"prompt": combined, "executeCompletion": False},
+            )
+            if preview["decision"]["route"] in {"local", "refuse"}:
+                audit("gateway", "preview_" + preview["decision"]["route"],
+                      route=preview["decision"]["route"], success=False)
+                raise Stop(422, "preview_withheld")
+            if not (
+                preview["decision"]["route"] == "cloud"
+                and preview["detectedCategories"] == []
+                and preview["matchedSemanticCategories"] == []
+                and preview["promptInjection"]["detected"] is False
+            ):
+                raise Stop(503, "preview_not_clean")
         audit(
             "gateway",
             "preview_clean",
             route="cloud",
-            metadata={"messages_checked": len(messages)},
+            metadata={"messages_checked": len(messages), "combined_checked": len(messages) > 1},
         )
 
     @staticmethod

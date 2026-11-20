@@ -64,3 +64,13 @@ async def test_unconfigured_gateway_never_connects(tmp_path):
                     [], "test", lambda *a, **k: None
                 )
     assert double.requests == []
+
+
+def test_combined_preview_stops_before_completion(setup, submit):
+    # Each message previews clean alone, the joined conversation does not (live P3a, 20 Nov).
+    _, double, _ = setup
+    double.fault = "combined"
+    r = submit("A warehouse emergency exit was blocked with boxes.")
+    assert r.status_code == 503 and r.json()["error"] == "preview_not_clean"
+    assert not [u for u, _, _ in double.requests if u.endswith("/chat/completions")]
+    assert not double.deliveries

@@ -66,7 +66,9 @@ class Double:
                 200,
                 json={
                     "decision": {"route": "cloud"},
-                    "detectedCategories": [],
+                    "detectedCategories": [{"label": "PERSON", "sampleText": "#P01"}]
+                    if self.fault == "combined" and "\n\n{" in body["prompt"]
+                    else [],
                     "matchedSemanticCategories": [],
                     "promptInjection": {"detected": False},
                     "outgoingCloudPayloadPreview": None

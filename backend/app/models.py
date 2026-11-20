@@ -36,6 +36,12 @@ class Decision(Strict):
     count: int | None = Field(ge=0)
 
 
+class Brief(Strict):
+    facts: list[str]
+    timeline: list[str]
+    evidence: list[str]
+
+
 class Case(Strict):
     case_id: str
     reporter: Literal["REPORTER_01"] = "REPORTER_01"
@@ -45,6 +51,7 @@ class Case(Strict):
     received_at: str
     decisions: list[Decision]
     brane_status: Literal["ok"] = "ok"
+    brief: Brief | None = None
 
 
 class Extraction(Strict):
