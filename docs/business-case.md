@@ -2,6 +2,20 @@
 
 **Decision for a pilot, 20 November 2026.** A compliance director at a Dutch employer with 50–249 workers could use Čulo to prepare an unverified brief, register receipt and keep an independent handler’s follow-up visible. The employer still needs a designated handler, an alternate for conflicts and a safe way to reach the reporter. The synthetic prototype can demonstrate that division of work. Procurement for live reports requires additional safeguards.
 
+## Who buys this
+
+Čulo is an AI triage layer for an existing reporting channel. A compliance team can prepare a first brief without showing the report to the AI vendor. The intake host retains the original. The model can select from allowlisted facts after the gateway checks pass.
+
+The first legal beachhead is Dutch employers with 50–249 workers. For a commercial pilot, recruit a multi-entity group with a central ethics team, or a whistleblowing platform that can sell triage as an add-on. Ask each buyer how many reports reach the same intake team across its entities or customers. The case-volume sensitivity below makes that question material.
+
+| Pilot measure | Observable result |
+| --- | --- |
+| Acknowledgement-deadline compliance | Count all received cases, including holds. Divide acknowledgements actually delivered within seven days by cases due. Keep missed or unreachable deliveries visible. |
+| Zero identity exposure to model vendors | Compare the synthetic identifiers against recorded model-bound user messages. Inspect the BRANE preview and route headers for completed requests and count completion attempts on holds. Report the tested cases and gaps in live coverage. |
+| Time to first triage | Time from release of the report until the designated handler can open a usable brief or a held-review task. Record quality and report the two paths separately. |
+
+Willingness to pay is unvalidated. Interview five compliance officers about annual volume, missed acknowledgements, preparation time and purchasing authority. Ask them to walk through a recent workflow using synthetic details before discussing pilot pricing.
+
 ## What the employer buys
 
 A worker who spots mismatched invoices may want an independent person to check the ledger without revealing who spoke up to colleagues or the person named. Today somebody must read the account, distinguish allegation from fact, strip identifying details, record receipt, acknowledge it, assign the case and track the feedback date. A general HR inbox makes it difficult to control who sees each item.
@@ -57,3 +71,10 @@ The difference from the 86–179 ms runs is BRANE's preflight checks plus real m
 
 **Manual comparison pending.** Run `python3 tests/manual_benchmark.py`, which follows this protocol, times the run and compares it with the live traces. Give the same text to a teammate who has not seen the prepared brief. Supply a blank restricted case form and the same four checks. Have a second person start the timer on release and stop it on successful handler access. Record minutes/seconds, missing facts, any corrections and sample size. Repeat failed quality checks with the clock running. Report observed differences only after this exercise. The 30-minute illustrative saving above is a pricing sensitivity assumption.
 
+
+## Manual baseline vs Čulo
+
+| Input | Manual minutes (n, range) | Čulo seconds (n, range) | Quality checks passed |
+| --- | --- | --- | --- |
+| Ledger discrepancy, Monday, ledger entries | TO MEASURE | Historical hosted runs, n = 4, 6.22–7.62 s. Current build TO MEASURE | Historical handler pages showed discrepancy, Monday, ledger evidence and pending human decision. No invented person or conclusion. |
+| Held report with identifying shift details (E1) | TO MEASURE | TO MEASURE | Current local tests check a P1 receipt, register handoff and zero gateway requests. End-to-end timing pending. |
