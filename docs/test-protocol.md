@@ -42,7 +42,7 @@ This runner observes the **direct BRANE route** using synthetic source text. The
 | E2 | Witness named, then called by her nickname | P2 PROTECT | both names map to one token |
 | E3 | "Knee surgery" in a witness statement | P3 LOCAL ONLY | `local` or 422 |
 | E4 | Person protected, supplier company needed | P2 PROTECT + P5 ALLOW | person protected, company name still readable |
-| E5 | Speech-to-text: spelled-out name, phone number as words (from a generated fictional clip) | P1/P2 PROTECT | every spoken form protected |
+| E5 | Speech-to-text: spelled-out name, phone number as words (from a generated fictional clip) | P1/P2 PROTECT | every spoken form protected; since Run 4 the report is held for a person (see below) |
 
 ### P3 paired fixtures: policy breach vs criminal allegation (Person A, 20 Nov)
 Naming someone does not by itself keep a report local. P2 replaces the name with a case-scoped placeholder and removes identifying context. P3 applies separately to the *content* of the allegation:
@@ -105,7 +105,7 @@ This is the teammates' fact-synthesis backend at `81fe514`, after the live fix t
 
 | Result | Cases |
 |---|---|
-| Cases created | T1, T3, P3a, E4, E5 |
+| Cases created | T1, T3, P3a, E4, E5 (E5 held from Run 4) |
 | Held locally | T2, T4, T5, P3b, E2, E3, **E1** |
 
 What changed from Run 2:
@@ -113,7 +113,22 @@ What changed from Run 2:
 - **T1's** draft names the topic ("whether invoices were recorded more than once").
 - **T3's** outbound text is a single fact with `#P01`.
 
-The submission CSVs cite this run.
+The submission CSVs cited this run until Run 4.
+
+### Run 4: backend with narrative summaries (21 Nov, 00:28), `evidence/backend_run_20261121-002846.json`
+Backend policy `synthetic-intake-6`, BRANE policy-v2 (sha256 `e3226167…ca23`). Since Run 3, reports the fixed grammar only recognises as a topic are summarised by the model from a locally redacted copy of the report text. Live adapter tests: 3/3 passed.
+
+| Result | Cases |
+|---|---|
+| Cases created | T1, T3, P3a, E4 |
+| Held locally before BRANE | T2, T4, T5, P3b, E1, E2, E3, E6 |
+| **Held for a person at the BRANE preview** | **E5** (HTTP 503 `preview_not_clean`, zero completions) |
+
+What changed from Run 3:
+- **E5 is no longer summarised. A person reads it.** The backend's redacted text withheld the spoken phone number ("(phone withheld)") and replaced every spoken and spelled form of the name. BRANE's preview then flagged the job title "shift manager" as PERSON. The backend sends nothing unless the preview is clean, so the report was held. No name, spelling or digit reached BRANE's completion endpoint or the model. This is a usefulness loss, not a leak.
+- The same detector behaviour held three extra spoken/identifier probes (spoken phone, spoken e-mail, staff number) after full redaction, because "my shift lead" / "my supervisor" were flagged as PERSON. Lowercase, Chinese and Cyrillic names, social handles, a street address with city, "named …" introductions and plain harassment reports produced summaries. The audited outbound text of every probe contained none of the private values.
+
+**Product gap for the AI-Z desk:** BRANE's PERSON detector (GLiNER) labels job titles such as "shift manager", "my shift lead" and "my supervisor" as names, and it does so inconsistently between near-identical sentences. We would like role nouns excluded from PERSON, or a per-tenant allowlist of role terms.
 
 ### Findings to take to the AI-Z desk
 1. **The live headers say `X-Brane-Pii-Detected: false` for every request under the open policy,** even when `/policy/test` detects PERSON, EMAIL, PHONE and HEALTH_DATA in the same text. We tested four message layouts (user only, system then user, user then system, merged), and all four gave the same result. The likely cause is that detection is skipped when everything is `allow`. **Re-check after the policy is set.** If live calls still don't detect, that is a bypass.

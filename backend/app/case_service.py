@@ -40,7 +40,7 @@ def _use_narrative(review):
 
 async def _narrative(state, rid, audit, text, screened):
     """Let the model read a locally protected copy of an unparsed report."""
-    if not narrative.eligible(text):
+    if not state.settings.narrative or not narrative.eligible(text):
         raise Stop(422, "local_review_required", "P5")
     protected = narrative.protect(screened.protected or text, screened.mentions)
     if protected.new_mappings:

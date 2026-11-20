@@ -1,0 +1,847 @@
+{
+  "backend": "http://127.0.0.1:8011",
+  "policy_version": "synthetic-intake-6",
+  "policy_sha256": "e32261674b2ef8ced8b000da97bcdb0f2bb83683115e70830ba2e45ce868ca23",
+  "results": [
+    {
+      "id": "T1",
+      "http_status": 200,
+      "response": {
+        "case_id": "WB-065b065a8b9c4d978a97b8b49db3c8c9",
+        "reporter": "REPORTER_01",
+        "category": "other",
+        "summary": "The report discusses whether invoices were recorded more than once.",
+        "persons": [],
+        "received_at": "2026-11-20T23:27:54.142854Z",
+        "decisions": [
+          {
+            "policy": "P5",
+            "action": "ALLOW",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "brane_status": "ok",
+        "brief": {
+          "facts": [
+            "The report discusses whether invoices were recorded more than once."
+          ],
+          "timeline": [],
+          "evidence": []
+        }
+      },
+      "x_request_id": "726e30d5-4a79-456d-99f6-54bf2e613858",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "HUMAN_ONLY",
+          "policy_id": "P6",
+          "count": null
+        },
+        {
+          "action": "case_created",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": null,
+      "completion_attempted": true,
+      "outbound_user_messages": [
+        "{\"facts\": [{\"category\": \"other\", \"fact_id\": \"F001\", \"kind\": \"topic\", \"topic\": \"duplicate_invoicing\"}], \"open_questions\": [\"when\", \"where\", \"participants\", \"evidence\"]}"
+      ],
+      "held_registered": false,
+      "outbox_state": "pending",
+      "brane_completion_headers": {
+        "X-Brane-Routed-To": "cloud",
+        "X-Brane-Action": "allow",
+        "X-Brane-Redacted": "false",
+        "X-Brane-Pii-Detected": "false",
+        "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+        "X-Brane-Lane": "governed"
+      }
+    },
+    {
+      "id": "T2",
+      "http_status": 202,
+      "response": {
+        "case_id": "WB-889c8d4ec8f24351aeab721f213324e2",
+        "reporter": "REPORTER_01",
+        "status": "held_for_review",
+        "hold_reason": "restricted_material",
+        "policy": "P3",
+        "received_at": "2026-11-20T23:28:06.514023Z",
+        "decisions": [
+          {
+            "policy": "P3",
+            "action": "LOCAL_ONLY",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "message": "Received. A person will review your report."
+      },
+      "x_request_id": "d7c6b1e1-294f-4dc3-a24a-7b9f4a839b35",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P1",
+          "count": 4
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P2",
+          "count": 1
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "LOCAL_ONLY",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "held_registered",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "receipt_delivery",
+          "policy_id": "P3",
+          "count": null
+        }
+      ],
+      "block_reason": "restricted_material",
+      "completion_attempted": false,
+      "outbound_user_messages": [],
+      "held_registered": true,
+      "outbox_state": "pending",
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "T3",
+      "http_status": 200,
+      "response": {
+        "case_id": "WB-3220b0cb69824a9ea8a02e153c05af4d",
+        "reporter": "REPORTER_01",
+        "category": "other",
+        "summary": "PERSON_01 allegedly approved purchase orders without the required second sign-off.",
+        "persons": [
+          "PERSON_01"
+        ],
+        "received_at": "2026-11-20T23:28:06.535253Z",
+        "decisions": [
+          {
+            "policy": "P1",
+            "action": "PROTECT",
+            "count": 1
+          },
+          {
+            "policy": "P2",
+            "action": "PROTECT",
+            "count": 5
+          },
+          {
+            "policy": "P5",
+            "action": "ALLOW",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "brane_status": "ok",
+        "brief": {
+          "facts": [
+            "PERSON_01 allegedly approved purchase orders without the required second sign-off."
+          ],
+          "timeline": [],
+          "evidence": []
+        }
+      },
+      "x_request_id": "8d6c9cb7-236d-497b-b969-2ed18b17af82",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P1",
+          "count": 1
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P2",
+          "count": 5
+        },
+        {
+          "action": "HUMAN_ONLY",
+          "policy_id": "P6",
+          "count": null
+        },
+        {
+          "action": "case_created",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": null,
+      "completion_attempted": true,
+      "outbound_user_messages": [
+        "{\"facts\": [{\"category\": \"other\", \"fact_id\": \"F001\", \"kind\": \"purchase_without_signoff\", \"subject\": \"#P01\"}], \"open_questions\": [\"when\", \"where\", \"evidence\"]}"
+      ],
+      "held_registered": false,
+      "outbox_state": "pending",
+      "brane_completion_headers": {
+        "X-Brane-Routed-To": "cloud",
+        "X-Brane-Action": "allow",
+        "X-Brane-Redacted": "false",
+        "X-Brane-Pii-Detected": "false",
+        "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+        "X-Brane-Lane": "governed"
+      }
+    },
+    {
+      "id": "T4",
+      "http_status": 202,
+      "response": {
+        "case_id": "WB-c35a7540422943af886b5be03eeec5ee",
+        "reporter": "REPORTER_01",
+        "status": "held_for_review",
+        "hold_reason": "instruction_quarantined",
+        "policy": "P4",
+        "received_at": "2026-11-20T23:28:19.418542Z",
+        "decisions": [
+          {
+            "policy": "P4",
+            "action": "BLOCK",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "message": "Received. A person will review your report."
+      },
+      "x_request_id": "d8ae35e6-7d7b-489e-9a0f-6f2a4e8c8a58",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "instruction_signal",
+          "policy_id": "P4",
+          "count": 1
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P1",
+          "count": 2
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P4",
+          "count": null
+        },
+        {
+          "action": "held_registered",
+          "policy_id": "P4",
+          "count": null
+        },
+        {
+          "action": "receipt_delivery",
+          "policy_id": "P4",
+          "count": null
+        }
+      ],
+      "block_reason": "instruction_quarantined",
+      "completion_attempted": false,
+      "outbound_user_messages": [],
+      "held_registered": true,
+      "outbox_state": "pending",
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "T5",
+      "http_status": 202,
+      "response": {
+        "case_id": "WB-d4fcc332aa7143c686ae8398a3af1962",
+        "reporter": "REPORTER_01",
+        "status": "held_for_review",
+        "hold_reason": "restricted_material",
+        "policy": "P3",
+        "received_at": "2026-11-20T23:28:19.441295Z",
+        "decisions": [
+          {
+            "policy": "P3",
+            "action": "LOCAL_ONLY",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "message": "Received. A person will review your report."
+      },
+      "x_request_id": "bc08bc9e-e3c6-427f-906c-c223fd0ea591",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "LOCAL_ONLY",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "held_registered",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "receipt_delivery",
+          "policy_id": "P3",
+          "count": null
+        }
+      ],
+      "block_reason": "restricted_material",
+      "completion_attempted": false,
+      "outbound_user_messages": [],
+      "held_registered": true,
+      "outbox_state": "pending",
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "P3a",
+      "http_status": 200,
+      "response": {
+        "case_id": "WB-1cdf157da5b84e02811822fe9897aaa7",
+        "reporter": "REPORTER_01",
+        "category": "other",
+        "summary": "PERSON_01 allegedly approved a purchase without the required second sign-off.",
+        "persons": [
+          "PERSON_01"
+        ],
+        "received_at": "2026-11-20T23:28:19.463192Z",
+        "decisions": [
+          {
+            "policy": "P2",
+            "action": "PROTECT",
+            "count": 1
+          },
+          {
+            "policy": "P5",
+            "action": "ALLOW",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "brane_status": "ok",
+        "brief": {
+          "facts": [
+            "PERSON_01 allegedly approved a purchase without the required second sign-off."
+          ],
+          "timeline": [],
+          "evidence": []
+        }
+      },
+      "x_request_id": "f314b8e8-113d-4cfa-b6ca-59cf091455cc",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P2",
+          "count": 1
+        },
+        {
+          "action": "HUMAN_ONLY",
+          "policy_id": "P6",
+          "count": null
+        },
+        {
+          "action": "case_created",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": null,
+      "completion_attempted": true,
+      "outbound_user_messages": [
+        "{\"facts\": [{\"category\": \"other\", \"fact_id\": \"F001\", \"kind\": \"purchase_without_signoff\", \"subject\": \"#P01\"}], \"open_questions\": [\"when\", \"where\", \"evidence\"]}"
+      ],
+      "held_registered": false,
+      "outbox_state": "pending",
+      "brane_completion_headers": {
+        "X-Brane-Routed-To": "cloud",
+        "X-Brane-Action": "allow",
+        "X-Brane-Redacted": "false",
+        "X-Brane-Pii-Detected": "false",
+        "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+        "X-Brane-Lane": "governed"
+      }
+    },
+    {
+      "id": "P3b",
+      "http_status": 202,
+      "response": {
+        "case_id": "WB-4c26760ab93841d4b4eea5e9ae04dd58",
+        "reporter": "REPORTER_01",
+        "status": "held_for_review",
+        "hold_reason": "restricted_material",
+        "policy": "P3",
+        "received_at": "2026-11-20T23:28:31.678148Z",
+        "decisions": [
+          {
+            "policy": "P3",
+            "action": "LOCAL_ONLY",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "message": "Received. A person will review your report."
+      },
+      "x_request_id": "763aa097-35b7-426e-882e-88d95db284a5",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "LOCAL_ONLY",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "held_registered",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "receipt_delivery",
+          "policy_id": "P3",
+          "count": null
+        }
+      ],
+      "block_reason": "restricted_material",
+      "completion_attempted": false,
+      "outbound_user_messages": [],
+      "held_registered": true,
+      "outbox_state": "pending",
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "E1",
+      "http_status": 202,
+      "response": {
+        "case_id": "WB-cfefb8fcac5b445fb1bf8013287b7db1",
+        "reporter": "REPORTER_01",
+        "status": "held_for_review",
+        "hold_reason": "identifying_context",
+        "policy": "P1",
+        "received_at": "2026-11-20T23:28:31.697945Z",
+        "decisions": [
+          {
+            "policy": "P1",
+            "action": "BLOCK",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "message": "Received. A person will review your report."
+      },
+      "x_request_id": "84295d60-7bae-4968-a263-2de787c20a1d",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P1",
+          "count": null
+        },
+        {
+          "action": "held_registered",
+          "policy_id": "P1",
+          "count": null
+        },
+        {
+          "action": "receipt_delivery",
+          "policy_id": "P1",
+          "count": null
+        }
+      ],
+      "block_reason": "identifying_context",
+      "completion_attempted": false,
+      "outbound_user_messages": [],
+      "held_registered": true,
+      "outbox_state": "pending",
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "E2",
+      "http_status": 202,
+      "response": {
+        "case_id": "WB-ececdb261fb341658cd455ed809ae982",
+        "reporter": "REPORTER_01",
+        "status": "held_for_review",
+        "hold_reason": "local_review_required",
+        "policy": "P5",
+        "received_at": "2026-11-20T23:28:31.715835Z",
+        "decisions": [
+          {
+            "policy": "P5",
+            "action": "BLOCK",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "message": "Received. A person will review your report."
+      },
+      "x_request_id": "48b48222-82f7-4a48-94b0-647194f02939",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "held_registered",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "receipt_delivery",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": "local_review_required",
+      "completion_attempted": false,
+      "outbound_user_messages": [],
+      "held_registered": true,
+      "outbox_state": "pending",
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "E3",
+      "http_status": 202,
+      "response": {
+        "case_id": "WB-f60185125b5e4ea499798e17cc42fd9a",
+        "reporter": "REPORTER_01",
+        "status": "held_for_review",
+        "hold_reason": "restricted_material",
+        "policy": "P3",
+        "received_at": "2026-11-20T23:28:31.734897Z",
+        "decisions": [
+          {
+            "policy": "P3",
+            "action": "LOCAL_ONLY",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "message": "Received. A person will review your report."
+      },
+      "x_request_id": "c8163487-74d2-493f-b3de-573c797770b9",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "LOCAL_ONLY",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "held_registered",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "receipt_delivery",
+          "policy_id": "P3",
+          "count": null
+        }
+      ],
+      "block_reason": "restricted_material",
+      "completion_attempted": false,
+      "outbound_user_messages": [],
+      "held_registered": true,
+      "outbox_state": "pending",
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "E4",
+      "http_status": 200,
+      "response": {
+        "case_id": "WB-c207b423595040d8b8bb7f0391cabb2d",
+        "reporter": "REPORTER_01",
+        "category": "other",
+        "summary": "The report mentions a concern about invoicing or financial records.",
+        "persons": [],
+        "received_at": "2026-11-20T23:28:31.752954Z",
+        "decisions": [
+          {
+            "policy": "P5",
+            "action": "ALLOW",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "brane_status": "ok",
+        "brief": {
+          "facts": [
+            "The report mentions a concern about invoicing or financial records."
+          ],
+          "timeline": [],
+          "evidence": []
+        }
+      },
+      "x_request_id": "ea1a62b8-1e25-463c-89bf-54b5799e1320",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "HUMAN_ONLY",
+          "policy_id": "P6",
+          "count": null
+        },
+        {
+          "action": "case_created",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": null,
+      "completion_attempted": true,
+      "outbound_user_messages": [
+        "{\"facts\": [{\"category\": \"other\", \"fact_id\": \"F001\", \"kind\": \"topic\", \"topic\": \"invoicing\"}], \"open_questions\": [\"when\", \"where\", \"participants\", \"evidence\"]}"
+      ],
+      "held_registered": false,
+      "outbox_state": "pending",
+      "brane_completion_headers": {
+        "X-Brane-Routed-To": "cloud",
+        "X-Brane-Action": "allow",
+        "X-Brane-Redacted": "false",
+        "X-Brane-Pii-Detected": "false",
+        "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+        "X-Brane-Lane": "governed"
+      }
+    },
+    {
+      "id": "E5",
+      "http_status": 503,
+      "response": {
+        "case_id": "WB-5c70936cf7334cf8bc76445cc3c28aee",
+        "reporter": "REPORTER_01",
+        "status": "held_unverified",
+        "hold_reason": "preview_not_clean",
+        "policy": "P5",
+        "received_at": "2026-11-20T23:28:43.696308Z",
+        "decisions": [
+          {
+            "policy": "P5",
+            "action": "BLOCK",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "message": "Received. A person will review your report."
+      },
+      "x_request_id": "08e3bb8f-bd2c-411a-8588-f4dae67eb980",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "narrative_protected",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "held_registered",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "receipt_delivery",
+          "policy_id": "P5",
+          "count": null
+        }
+      ],
+      "block_reason": "preview_not_clean",
+      "completion_attempted": false,
+      "outbound_user_messages": [],
+      "held_registered": true,
+      "outbox_state": "pending",
+      "brane_completion_headers": {}
+    },
+    {
+      "id": "E6",
+      "http_status": 202,
+      "response": {
+        "case_id": "WB-f75e04d19aa440ecb254f54b397c2059",
+        "reporter": "REPORTER_01",
+        "status": "held_for_review",
+        "hold_reason": "restricted_material",
+        "policy": "P3",
+        "received_at": "2026-11-20T23:28:46.205366Z",
+        "decisions": [
+          {
+            "policy": "P3",
+            "action": "LOCAL_ONLY",
+            "count": null
+          },
+          {
+            "policy": "P6",
+            "action": "HUMAN_ONLY",
+            "count": null
+          }
+        ],
+        "message": "Received. A person will review your report."
+      },
+      "x_request_id": "37232797-17b8-47e8-ade0-9237b2e75d38",
+      "local_decisions": [
+        {
+          "action": "intake_received",
+          "policy_id": "P5",
+          "count": null
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P1",
+          "count": 1
+        },
+        {
+          "action": "PROTECT",
+          "policy_id": "P2",
+          "count": 5
+        },
+        {
+          "action": "BLOCK",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "LOCAL_ONLY",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "held_registered",
+          "policy_id": "P3",
+          "count": null
+        },
+        {
+          "action": "receipt_delivery",
+          "policy_id": "P3",
+          "count": null
+        }
+      ],
+      "block_reason": "restricted_material",
+      "completion_attempted": false,
+      "outbound_user_messages": [],
+      "held_registered": true,
+      "outbox_state": "pending",
+      "brane_completion_headers": {}
+    }
+  ]
+}

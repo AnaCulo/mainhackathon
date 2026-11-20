@@ -1,6 +1,6 @@
 # Evidence status
 
-**STATUS: PENDING LIVE RUN on synthetic-intake-5**
+**STATUS: LIVE RUN on synthetic-intake-6 (21 Nov, 00:28)**: [backend_run_20261121-002846.json](../evidence/backend_run_20261121-002846.json). E5 is now held for a person at the BRANE preview (job title flagged as PERSON, nothing sent); see `docs/test-protocol.md`, Run 4. The paragraphs below describe the earlier state.
 
 The hosted BRANE key and reviewed policy fingerprint were unavailable for this build. The backend columns in both hand-in CSVs retain their historical observations. Local integration tests use simulated BRANE and webhook responses. A new live run must verify the E6 result, outbound content, completion headers, held-register delivery and human review link before replacing the historical evidence.
 
@@ -11,6 +11,7 @@ The inherited evidence set is catalogued under the historical synthetic-intake-3
 | [backend_run_20261120-172943.json](../evidence/backend_run_20261120-172943.json) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |
 | [backend_run_20261120-175038.json](../evidence/backend_run_20261120-175038.json) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |
 | [backend_run_20261120-204543.json](../evidence/backend_run_20261120-204543.json) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |
+| [backend_run_20261121-002846.json](../evidence/backend_run_20261121-002846.json) | synthetic-intake-6, live BRANE policy-v2 | Current |
 | [elevenlabs_call_20261120-195233.json](../evidence/elevenlabs_call_20261120-195233.json) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |
 | [elevenlabs_call_20261120-195233_agent.wav](../evidence/elevenlabs_call_20261120-195233_agent.wav) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |
 | [elevenlabs_call_20261120-200549.json](../evidence/elevenlabs_call_20261120-200549.json) | synthetic-intake-3 catalogue, runtime version unstamped | Historical |

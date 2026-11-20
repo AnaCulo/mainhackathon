@@ -80,10 +80,42 @@ class NarrativeBrief(Strict):
     questions: Annotated[list[QuestionKey], Field(max_length=2)]
 
 
+# Spoken digits as speech-to-text writes them ("oh six one two ...").
+_DIGIT_WORD = r"(?:oh|zero|nought|nil|one|two|three|four|five|six|seven|eight|nine|double|triple|\d+)"
+_DIGITS = rf"{_DIGIT_WORD}(?:[\s,-]+{_DIGIT_WORD})*\b"
+_ID_CUE = r"staff|employee|personnel|payroll|badge|worker|locker|clock(?:ing)?|membership|id"
+_STREET_NL = r"straat|weg|laan|plein|gracht|kade|dijk|singel|steeg|markt|strasse|straße|gasse|platz|allee"
+_STREET_EN = (
+    r"Street|St\.|Road|Rd\.?|Avenue|Ave\.?|Lane|Boulevard|Drive|Square|Way|Close|Crescent|Terrace|"
+    r"Place|Court|Park|Estate"
+)
+_HOUSE = r"(?:\s+\d{1,4}(?:\s?[A-Za-z]\b)?(?!\w))?"
+
 # Local redactions applied before anything is previewed or sent. Order matters:
 # e-mail and money before bare numbers, codes before phone numbers.
 _REDACTIONS = [
     (r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", "(email withheld)"),
+    # Spoken e-mail: "jan dot smit at example dot test".
+    (
+        r"\b(?:[\w-]+\s+(?:dot|underscore|dash|hyphen|period)\s+)*[\w-]+\s+(?:at|@)\s+"
+        r"[\w-]+(?:\s+(?:dot|period)\s+[\w-]+)*\s+(?:dot|period)\s+"
+        r"(?:com|net|org|nl|de|be|eu|io|co|uk|fr|pl|es|it|at|ch|info|biz|test|example|edu|gov)\b",
+        "(email withheld)",
+    ),
+    # Social media handles, written or spoken ("at jsmith on instagram").
+    (r"(?<![\w.@])@[A-Za-z0-9_][A-Za-z0-9_.]{1,}", "(handle withheld)"),
+    (
+        r"\b(?:at|handle(?: is)?|username(?: is)?)\s+[\w.]+\s+(?=(?:on|at)\s+"
+        r"(?:instagram|insta|twitter|x|tiktok|facebook|linkedin|snapchat|telegram|threads|bluesky|reddit)\b)",
+        "(handle withheld) ",
+    ),
+    # Staff, employee, badge and similar numbers, written or spoken.
+    (
+        rf"\b(?:{_ID_CUE})\s*(?:number|no\.?|nr\.?|num|id|code|card|#)\s*(?:is\s+)?[:#]?\s*"
+        rf"(?:[A-Za-z0-9-]*\d[A-Za-z0-9-]*|{_DIGITS})"
+        rf"|\b(?:staff|employee|personnel|payroll|badge|id)\s*[:#]?\s*[A-Za-z]*\d[A-Za-z0-9-]*",
+        "(reference withheld)",
+    ),
     (r"https?://\S+", "(reference withheld)"),
     (
         r"(?:[€$£]\s?|\b(?:EUR|USD|GBP|CHF|PLN)\s?)\d(?:[\d,.']*\d)?(?:\s?(?:k|m|million|thousand)\b)?"
@@ -96,8 +128,22 @@ _REDACTIONS = [
     (r"\b(?=[A-Za-z0-9-]*\d)(?=[A-Za-z0-9-]*[A-Za-z])[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+\b", "(reference withheld)"),
     (r"\b(?=\w*\d)(?=\w*[A-Za-z])[A-Za-z]*\d[A-Za-z0-9]{3,}\b", "(reference withheld)"),
     (r"(?<!\w)\+?\d[\d ()-]{7,}\d(?!\w)", "(phone withheld)"),
+    # Phone numbers read out digit by digit, possibly mixed with figures.
+    (rf"\b{_DIGIT_WORD}(?:[\s,-]+{_DIGIT_WORD}){{3,}}\b", "(phone withheld)"),
     (r"\b\d{5,}\b", "(reference withheld)"),
 ]
+
+# Case-sensitive: a capital marks a street name, so "on the way" is left alone.
+_ADDRESSES = [
+    rf"\b[A-ZÀ-Ý][\w'’-]*(?:{_STREET_NL}){_HOUSE}",
+    rf"(?i:\b[\w'’-]+(?:{_STREET_NL})\s+\d{{1,4}}(?:\s?[a-z]\b)?(?!\w))",
+    rf"\b(?:\d{{1,4}}\s?[A-Za-z]?\s+)?(?:[A-Z][\w'’-]*\s+){{1,3}}(?:{_STREET_EN})(?!\w){_HOUSE}",
+]
+# A capitalised place after "in", "near" ...: "a depot in Venlo".
+_PLACE = re.compile(r"\b(?P<prep>[Ii]n|[Nn]ear|[Oo]utside|[Aa]round|[Bb]ased in)\s+(?P<name>[A-ZÀ-Ý][\w'’-]*(?:\s+[A-ZÀ-Ý][\w'’-]*)*)")
+# Letters outside the Latin script (李明, Иван, محمد) cannot be checked by
+# the capitalisation rules below, so they never leave the building.
+_NON_LATIN = re.compile(r"[^\W\d_A-Za-z\u00C0-\u024F\u1E00-\u1EFF]+(?:[\s·・-]*[^\W\d_A-Za-z\u00C0-\u024F\u1E00-\u1EFF]+)*")
 
 _SAFE_CAPS = {
     "i", "i'm", "i've", "i'd", "i'll", "hr", "it", "ceo", "cfo", "coo", "cto", "vp", "eu",
@@ -114,6 +160,8 @@ _SAFE_CAPS = {
     "production", "department", "team", "office", "manager", "supervisor", "director",
 }
 _WORD = r"[A-Z][\w'’-]*"
+# Name particles: "Ruud van Leeuwen", "van der Berg".
+_PARTICLE = r"(?:van|de|der|den|von|ten|ter|al|da|di|du|le|la)"
 _TOKEN = re.compile(r"\b(?:PERSON|REPORTER)_(\d{2,})\b")
 
 
@@ -131,7 +179,7 @@ _PERSON_VERBS = (
 
 def _name_runs(text):
     """Capitalised runs that look like names; a lone sentence-initial word does not."""
-    for m in re.finditer(rf"{_WORD}(?:\s+{_WORD})*", text):
+    for m in re.finditer(rf"(?:{_PARTICLE}\s+)?{_WORD}(?:\s+(?:{_PARTICLE}\s+)*{_WORD})*", text):
         words = m[0].split()
         start = m.start()
         while words and (words[0].casefold() in _SAFE_CAPS or _TOKEN.fullmatch(words[0])):
@@ -152,6 +200,78 @@ def _name_runs(text):
         yield " ".join(words)
 
 
+# First names that are not also ordinary English words, for reports typed or
+# transcribed without capitals ("john smith shouts at us"). Capitalised names
+# are found by _name_runs; this list only covers the lowercase case.
+_FIRST_NAMES = frozenset("""
+aaron adam adrian ahmed aisha alex alexander ali alice amir amy ana andrea andrew anna anne
+anouk antonio arjun bas ben benjamin bram carlos charlotte chen chris christian claire daan
+daniel david diego dirk ella emily emma eric erik eva fatima finn fleur francesca george
+hans hassan helen henk henry ian igor ines isabel ivan ivo jacob james jan janneke jasper
+jeroen jessica joao johan john jonas jorge jose joseph juan julia karen karim kevin kim
+lars laura lea lena linda lisa lotte luca lucas lukas maria mario marco martin mateo
+mehmet michael michelle mohamed mohammed natalia nina noah olga oliver olivia omar pablo
+paul pedro peter piet pieter priya rachel rafael raj ricardo robert ruben sander sanne
+sara sarah sebastian sem sergio simon sofia sophie stefan stephanie susan thijs thomas tim
+tom wei willem yusuf zoe
+""".split())
+_NAME_INTRO = re.compile(
+    r"\b(?:named|name is|name's|names are|goes by|known as|surname is)\s+([^\W\d_]+(?:[\s-]+[^\W\d_]+)?)",
+    re.IGNORECASE,
+)
+_NOT_SURNAME = frozenset("""
+a an the and or but so to of in on at by for from with about as is was are were be been has had
+have do does did will would can could should may might must who which that this these those
+he she they it we i me him her them us my his their our your not never always also still often
+just then again too very really keeps kept said says told tells asked asks called calls shouts
+yells screams swears mocks insults threatens threatened bullies harasses touches touched ignores
+ignored makes made gives gave takes took sends sent wants knows knew went came left works
+refuses refused denies denied saw sees laughs laughed walks walked comes goes gets got
+spelled spelt spelling written pronounced like
+""".split())
+
+
+def _lower_names(text):
+    """Lowercase or non-Latin names the capitalisation rules cannot see."""
+    for m in _NAME_INTRO.finditer(text):
+        words = [w for w in re.split(r"[\s-]+", m[1]) if w.casefold() not in _NOT_SURNAME]
+        if words and m[1].split()[0].casefold() not in _NOT_SURNAME:
+            yield " ".join(m[1].split()[: len(words)])
+    for m in re.finditer(r"(?<![\w'’])([a-zà-ÿ]+)(?:\s+((?:van |de |der |den |von |al )?[a-zà-ÿ'’-]+))?", text):
+        if m[1] not in _FIRST_NAMES:
+            continue
+        surname = m[2]
+        if surname and surname.split()[-1] not in _NOT_SURNAME and not re.fullmatch(_PERSON_VERBS, surname.split()[-1]):
+            yield f"{m[1]} {surname}"
+        else:
+            yield m[1]
+    for m in _NON_LATIN.finditer(text):
+        yield m[0]
+    # Names spelled out letter by letter: "r u u d", "j. s. m. i. t. h".
+    for m in re.finditer(r"(?<![\w'’])(?:[A-Za-z][\s.-]+){2,}[A-Za-z](?!\w)\.?", text):
+        if not re.fullmatch(r"[\s.]*(?:a|i)(?:[\s.]+(?:a|i))*[\s.]*", m[0], re.IGNORECASE):
+            yield m[0].rstrip(".")
+
+
+def _residual_risk(text):
+    """Anything still shaped like a contact detail or identifier after redaction.
+
+    The narrative path is optional. If a report keeps any of these, it goes to
+    a person instead of the model (fail closed), so a new leak shape costs a
+    summary, never an identity.
+    """
+    checks = (
+        ("email", r"@|\bdot\s+(?:com|net|org|nl|de|be|test|io|eu|co|uk)\b"),
+        ("spoken_digits", rf"\b{_DIGIT_WORD}(?:[\s,-]+{_DIGIT_WORD}){{2,}}\b"),
+        # Years and small counts are fine; a stray four-plus digit figure is not.
+        ("number", r"(?<!\d)(?!(?:19|20)\d\d(?!\d))\d{4,}"),
+        ("non_latin", _NON_LATIN.pattern),
+        ("handle", r"(?:instagram|twitter|tiktok|facebook|linkedin|snapchat|telegram)\b"),
+        ("street", rf"(?i:\w(?:{_STREET_NL})\b)"),
+    )
+    return [name for name, pattern in checks if re.search(pattern, text, re.IGNORECASE)]
+
+
 @dataclass
 class Protected:
     outbound: str
@@ -162,13 +282,34 @@ class Protected:
 
 def protect(protected: str, mentions: list[str]) -> Protected:
     text = " ".join(protected.split())
+    # Speech-to-text fillers carry nothing for the case.
+    text = re.sub(r"(?i)\b(?:(?:so\s+)?like i said(?: before)?|as i said(?: before)?|you know),?\s*", "", text)
+    text = re.sub(
+        r"(?i)(?:^|(?<=[.!?,]\s))(?:(?:uh|um|erm|er|ah|so|yeah|well|okay|ok|like|anyway)\b[,\s]+)+"
+        r"|\b(?:uh|um|erm|er)\b[,]?\s*",
+        "", text,
+    )
+    text = re.sub(r"\s{2,}", " ", text).strip()
+    # "my staff number is 4471" -> "(reference withheld)", not "My (reference withheld)".
+    text = re.sub(r"(?i)\b(?:my|his|her|their|our)\s+(?=(?:staff|employee|personnel|payroll|badge|worker|locker|id)\b)", "", text)
     for pattern, label in _REDACTIONS:
         text = re.sub(pattern, label, text, flags=re.IGNORECASE)
+    for pattern in _ADDRESSES:
+        text = re.sub(pattern, "(place withheld)", text)
+
+    def place(m):
+        words = m["name"].split()
+        if all(w.casefold() in _SAFE_CAPS or _TOKEN.fullmatch(w) or (w.isupper() and len(w) <= 4) for w in words):
+            return m[0]
+        return f"{m['prep']} (place withheld)"
+
+    text = _PLACE.sub(place, text)
     numbers = [int(n) for n in _TOKEN.findall(" ".join(mentions))]
     next_person = max(numbers, default=0) + 1
     names, new = {}, []
     # Longest first, so "Tom" after "Tom Becker" resolves to the same person.
-    for name in sorted(dict.fromkeys(_name_runs(text)), key=lambda n: -len(n.split())):
+    found = dict.fromkeys([*_name_runs(text), *_lower_names(text)])
+    for name in sorted(found, key=lambda n: -len(n.split())):
         key = name.casefold()
         if key in names:
             continue
@@ -190,7 +331,11 @@ def protect(protected: str, mentions: list[str]) -> Protected:
             flags=re.IGNORECASE,
         )
     tokens = set(mentions) | {t for t, _, _ in new} | {"REPORTER_01"}
-    return Protected(to_narrative(text), tokens, new)
+    outbound = to_narrative(text)
+    if _residual_risk(outbound):
+        # A shape the redactions above could not settle. A person reads it.
+        raise Stop(422, "local_review_required", "P1")
+    return Protected(outbound, tokens, new)
 
 
 _DETERMINER = r"(?i:my|our|the|a|an|his|her|their|one|another)"
@@ -211,6 +356,25 @@ def to_narrative(text):
         "", text, flags=re.IGNORECASE,
     )
     text = re.sub(r"\bREPORTER_01\b", "the reporter", text)
+    # "a foreman named PERSON_01" -> "a foreman PERSON_01", then role only.
+    text = re.sub(
+        r"\b(?:named|called|known as|goes by)\s+(?=PERSON_\d{2,})", "", text, flags=re.IGNORECASE
+    )
+    # A name followed by its own repeats or spelling ("Ruud, Ruud van Leeuwen,
+    # that's R U U D, van Leeuwen with double e") is one mention once redacted.
+    # Leaving four placeholders in a row makes the gateway's detector flag them.
+    tok = r"(?:PERSON|REPORTER)_\d{2,}"
+    spelling = r"(?:\s+with\s+(?:a\s+)?(?:double|single|two|an?)\s+[a-z]\b)"
+    text = re.sub(
+        rf"\b({tok}){spelling}?(?:\s*,\s*(?:(?:that's|that is|i\.e\.|spelled|spelt|or)\s+)?{tok}{spelling}?)+",
+        r"\1", text, flags=re.IGNORECASE,
+    )
+    text = re.sub(rf"\b({tok}){spelling}", r"\1", text, flags=re.IGNORECASE)
+    # "PERSON_01, he's the shift manager," -> "PERSON_01, the shift manager,"
+    text = re.sub(
+        rf"\b({tok}),\s+(?:he|she|they|who)(?:'s|’s|'re|’re|\s+is|\s+are|\s+was)\s+(?={_DETERMINER}\s)",
+        r"\1, ", text,
+    )
     seen = []
 
     def role(m):
@@ -224,7 +388,7 @@ def to_narrative(text):
     )
     # "my colleague PERSON_01 keeps" / "the dispatcher, PERSON_02, said" -> role only
     text = re.sub(
-        rf"\b(?P<role>{_DETERMINER}\s+(?:[a-z-]+\s+){{0,2}}[a-z-]+),?\s+(?P<token>(?:PERSON|REPORTER)_\d{{2,}}),?",
+        rf"\b(?P<role>{_DETERMINER}\s+(?:(?!(?:and|or|but|then|so)\b)[a-z-]+\s+){{0,2}}(?!(?:and|or|but|then|so)\b)[a-z-]+),?\s+(?P<token>(?:PERSON|REPORTER)_\d{{2,}}),?",
         role, text,
     )
 

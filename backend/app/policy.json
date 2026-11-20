@@ -1,5 +1,5 @@
 {
-  "version": "synthetic-intake-5",
+  "version": "synthetic-intake-6",
   "P1": "PROTECT",
   "P2": "PROTECT",
   "P3": "LOCAL_ONLY",
@@ -34,14 +34,23 @@
     "anxiety (?:disorder|medication)",
     "sick leave",
     "therapy",
-    "therapist"
+    "therapist",
+    "(?:trade|labou?r) unions?",
+    "union (?:member|members|membership|card|dues|rep|reps|representative|steward|activit\\w*|meetings?|organi[sz]\\w*)",
+    "(?:joined|join|joining|in|member of|left) (?:the|a|my|our) union",
+    "unioni[sz]\\w*"
   ],
   "instruction_patterns": [
     "\\b(?:ignore|disregard|forget|override)\\b.{0,40}\\b(?:all|any|previous|prior|above|earlier|your|system)\\b.{0,25}\\b(?:instructions?|rules|prompts?|guidance|policies)\\b",
     "\\b(?:you are now|act as|enter)\\b.{0,30}\\b(?:developer|admin|debug|jailbreak) mode\\b",
     "\\b(?:output|print|reveal|repeat|include|publish|send)\\b.{0,40}\\b(?:original report|full report|real name|full name|identity|contact list|reporter's name|system prompt)\\b",
     "system note to the ai",
-    "^(?:please )?(?:ignore|override) (?:the |your )?privacy rules\\b"
+    "^(?:please )?(?:ignore|override) (?:the |your )?privacy rules\\b",
+    "\\b(?:when|if|while|before|after)\\s+(?:you|the ai|the model|the assistant|the system)\\s+(?:summari[sz]e|summari[sz]ing|write|writes|draft|prepare|process|read|reads)\\b",
+    "\\b(?:in|for) (?:your|the) (?:summary|brief|draft|output|response)\\b.{0,40}\\b(?:say|state|write|claim|report|mention|put|note|mark)\\b",
+    "\\b(?:summary|summari[sz]e|summari[sz]ing|brief|you)\\b.{0,40}\\b(?:say|state|write|claim|report|mark|tell)\\b.{0,40}\\b(?:already (?:fixed|resolved|solved|handled|repaired|closed)|(?:is|was|has been|been) (?:fixed|resolved|solved|handled|repaired|closed)|no (?:risk|action|hazard)|not urgent|low priority|nothing to (?:see|worry))\\b",
+    "\\b(?:dear|hey|hi|note to|attention|message to|instructions? (?:to|for))\\s+(?:the\\s+)?(?:ai|a\\.i\\.|assistant|model|chatbot|bot|llm|summari[sz]er)\\b",
+    "\\b(?:tell|inform|assure) the (?:handler|reviewer|investigator|case handler)\\b.{0,40}\\b(?:fixed|resolved|solved|handled|safe|closed|nothing)\\b"
   ],
   "topics": [
     [
@@ -76,7 +85,7 @@
     ],
     [
       "harassment",
-      "harassment|harassed|bullying",
+      "harassment|harassed|bullying|bull(?:y|ies|ied)|shouts? at|shouting at|shouted at|yells? at|yelling at|yelled at|screams? at|screaming at|screamed at|swears? at|swearing at|mocks?|mocking|mocked|insults?|insulting|insulted|humiliat\\w*|belittl\\w*|intimidat\\w*|threaten\\w*|demean\\w*|call(?:s|ed|ing)? (?:me|them|us|her|him|staff|people|everyone|colleagues|workers) (?:stupid|useless|idiots?|names|lazy|worthless|incompetent|dumb)",
       "The report mentions possible workplace harassment."
     ],
     [
@@ -106,6 +115,9 @@
   "identifying_context": [
     "\\b(?:i am|i['’]m|i was|as)\\s+(?:the\\s+)?(?:only|sole|single|one)\\b.{0,60}\\b(?:shift|technician|driver|operator|employee|supervisor|analyst|woman|man|person)\\b",
     "\\b(?:tiny|small|satellite) (?:office|depot|branch)\\b.{0,100}\\b(?:shift|[0-9]{1,2}:[0-9]{2})\\b",
-    "\\b(?:night shift|[0-9]{1,2}:[0-9]{2})\\b.{0,100}\\b(?:tiny|small) (?:office|depot|branch)\\b"
+    "\\b(?:night shift|[0-9]{1,2}:[0-9]{2})\\b.{0,100}\\b(?:tiny|small) (?:office|depot|branch)\\b",
+    "\\b(?:the|i am the|i['’]m the|as the|being the)\\s+(?:only|sole|single|one and only)\\s+(?:[\\w-]+\\s+){0,3}(?:trainers?|teachers?|instructors?|technicians?|drivers?|operators?|employees?|workers?|supervisors?|analysts?|women|woman|man|men|person|people|nurses?|engineers?|translators?|interpreters?|mechanics?|cleaners?|chemists?|accountants?|electricians?|welders?|planners?|speakers?|members?|one|staff|colleagues?|guards?|pilots?|doctors?|lawyers?|designers?|developers?|programmers?|cooks?|chefs?|forklift)\\b",
+    "\\b(?:only|sole)\\b.{0,60}\\bfor (?:over |more than |almost |nearly )?(?:\\d{1,2}|[a-z]+) years\\b",
+    "\\b[a-z]+-speaking\\b.{0,40}\\b(?:only|sole|single)\\b|\\b(?:only|sole|single)\\b.{0,40}\\b[a-z]+-speaking\\b"
   ]
 }

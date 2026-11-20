@@ -39,8 +39,8 @@ Open the case ID in the handler queue. For a held report the task links to the a
 | --- | --- |
 | One person became both PERSON_REF_1 and PERSON_REF_2 | Counts repeated mentions under one case-scoped token before release. |
 | Aliases were unlinked | Binds supplied aliases and supported surname forms locally. Ambiguous bindings trigger a hold. |
-| Spoken phone digits appeared in a preview | Builds model-bound messages from an allowlist that excludes narrative and spoken-number strings. |
-| Names were restored in model answers | Accepts only validated IDs and enums. Renders the handler’s sentences locally. |
+| Spoken phone digits appeared in a preview | Report text does go to the model for summaries, but only after local redaction: written and spoken phone numbers and emails, names in any case or script, staff numbers, handles and addresses are withheld first. Anything still shaped like an identifier sends the report to a person instead. |
+| Names were restored in model answers | Grammar path: accepts only validated IDs and enums. Summary path: rejects any answer that adds a name, number, place or term not in the redacted text. |
 | BRANE detected PERSON in our own tokens | Uses gateway tokens such as #P01, checks the preview and fails closed on detections. |
 
 [Historical runs and findings](../docs/test-protocol.md) · [Evidence status](../submission/EVIDENCE_STATUS.md)

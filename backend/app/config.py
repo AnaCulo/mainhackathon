@@ -24,6 +24,9 @@ class Settings:
     webhook: str
     webhook_key: str
     environment: str
+    # Model-written summaries of protected report text. Off sends every
+    # report the fixed grammar cannot parse to a person instead.
+    narrative: bool = True
 
     @classmethod
     def load(cls):
@@ -47,6 +50,7 @@ class Settings:
             get("N8N_WEBHOOK_URL", ""),
             get("N8N_WEBHOOK_SECRET", ""),
             get("APP_ENV", "development"),
+            get("NARRATIVE_SUMMARIES", "on").strip().lower() not in {"off", "0", "false", "no"},
         )
         if (
             settings.base != HOSTED
