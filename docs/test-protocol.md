@@ -63,12 +63,47 @@ Policy: all 25 categories `allow`, no semantic rules (the starting state AI-Z se
 
 This was expected. With the open policy, every name, email, phone number and health detail went to the cloud model, and the runner flagged each one as a leak. This run is our "before" evidence.
 
+### Run 2: policy-v2 applied (20 Nov, 16:58), `evidence/run_20261120-165852.*`
+Policy: [`brane/team-policy.json`](../brane/team-policy.json), applied with `python3 brane/apply_policy.py`.
+- **Categories:** 13 placeholder, 7 local, 2 refuse, 3 allow.
+- **Semantic rules:** 6.
+- **Fingerprint:** `e32261674b2ef8ced8b000da97bcdb0f2bb83683115e70830ba2e45ce868ca23`, pinned in `backend/.env`.
+
+| ID | Auto | Reviewed | Observed |
+|---|---|---|---|
+| T1 | PASS | **PASS** | cloud, `Redacted: false`, useful brief |
+| T2 | PASS | **PASS** | local (person-linked criminal allegation) |
+| T3 | FAIL | **FAIL** | No name left the gateway, but the same person got inconsistent tokens (`PERSON_REF_1` for the first mention, `PERSON_REF_2` after). Non-names were swallowed ("Colleagues say" → `PERSON_REF_3 say`). BRANE also restores real names in its answer |
+| T4 | PASS | **PASS** | HTTP 422. `EMBEDDED_INSTRUCTION_OVERRIDE` refused it |
+| T5 | PASS | **PASS** | local (health data) |
+| T5b | PASS | **PASS** | client fails closed, nothing sent |
+| P3a | FAIL | **PASS at the gateway, FAIL as a BRANE-only draft** | Name replaced in the cloud payload, but BRANE restores "Ivo" in the answer. The backend never uses restored values (see below) |
+| P3b | PASS | **PASS** | local (`CRIMINAL_OFFENCE_ALLEGATION`) |
+| E1 | PASS | **PASS** | local (`INDIRECT_REPORTER_IDENTIFICATION`) |
+| E2 | PASS | **FAIL (alias)** | "Johanna Bakker-Proef" → `PERSON_REF_1` but "Hanneke" → `PERSON_REF_2`, so the alias isn't linked. No name leaked |
+| E3 | PASS | **PASS** | local (indirect health) |
+| E4 | PASS | **PASS (borderline, as designed)** | local: `CRIMINAL_OFFENCE_ALLEGATION` treated repeated duplicate-invoice approvals as possible fraud. Matches the "hold borderline for human review" rule. Company name stayed readable in the preview |
+| E5 | PASS | **FAIL (leak)** | The spoken phone number was mostly sent: "oh six one two three four`PHONE_REF_1` six seven eight". The spelled-out name was replaced. "dust extraction" was swallowed into a token, which hurts usefulness |
+
+**What this means.** Under policy-v2, routing and refusal work: every local, refuse and allow decision was correct. **Placeholder quality is the weak spot.** Tokens aren't consistent per person, aliases aren't linked, spans are over-swallowed, spoken numbers get through, and names are restored in answers. This is exactly why the backend doesn't rely on BRANE's placeholders:
+- It builds the outbound text from a closed vocabulary with its own case-scoped tokens.
+- It only releases a request whose preview has **zero** detections.
+
+So BRANE is the second line of defence, not the first. Live backend check on the same policy:
+- T1 → HTTP 200 case `WB-…`, `brane_status: ok`
+- T4 → 422 `instruction_quarantined`
+- T5 → 422 `restricted_material`
+- P3a → 422 `local_review_required`
+- the backend's live adapter tests pass (2/2)
+
+These go in the policy matrix's "product gap" column. The runner's leak check is a substring match, so altered spoken digits (E5) and token consistency (T3) need the manual review above.
+
 ### Findings to take to the AI-Z desk
 1. **The live headers say `X-Brane-Pii-Detected: false` for every request under the open policy,** even when `/policy/test` detects PERSON, EMAIL, PHONE and HEALTH_DATA in the same text. We tested four message layouts (user only, system then user, user then system, merged), and all four gave the same result. The likely cause is that detection is skipped when everything is `allow`. **Re-check after the policy is set.** If live calls still don't detect, that is a bypass.
 2. **For T4, the preview and the live call disagree.** `/policy/test` flagged the prompt injection (prompt-guard score 0.99998) and previewed route `local`. The live `/chat/completions` call with the same text went to `cloud` with action `allow`. P4 needs a block (HTTP 422). Ask whether prompt-guard is enforced on live calls, and how to make it refuse rather than route locally.
 3. **Python's default user agent gets HTTP 403 (Cloudflare error 1010).** The runner sends its own `User-Agent`, and the backend must do the same.
 
-## BRANE configuration that implements the matrix (proposal for Person A and B)
+## BRANE configuration that implements the matrix (applied as policy-v2, see `brane/team-policy.json`)
 - **P1/P2 PROTECT → `placeholder`:** PERSON, EMAIL, PHONE, ADDRESS, DATE_OF_BIRTH, SSN, PASSPORT, TAX_NUMBER, INSURANCE_NUMBER, IBAN, ACCOUNT_NUMBER, CREDIT_CARD, IP_ADDRESS
 - **P3 LOCAL ONLY → `local`:** HEALTH_DATA, ETHNIC_ORIGIN, POLITICAL_OPINION, RELIGIOUS_BELIEF, SEXUAL_ORIENTATION, TRADE_UNION, SENSITIVE_CONTEXT
 - **Secrets → `refuse`:** PASSWORD, SECRET_KEY
