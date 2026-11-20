@@ -95,7 +95,6 @@ def test_model_can_prioritize_multiple_grounded_observations(setup, submit):
     selected = list(reversed(screened.observations))
     setup[1].answer = json.dumps(
         {
-            **screened.fields,
             "summary": " ".join(s for _, s in selected),
             "category": selected[0][0],
         }

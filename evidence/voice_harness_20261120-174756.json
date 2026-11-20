@@ -1,0 +1,91 @@
+{
+  "note": "Scripted fictional transcript turns stand in for ElevenLabs STT; backend, BRANE, model and n8n are live.",
+  "calls": {
+    "safety_call": {
+      "turns": [
+        {
+          "caller": "A warehouse emergency exit was blocked with boxes.",
+          "status": 200,
+          "agent": "When did this happen, roughly?",
+          "sse_done": true,
+          "ms": 2930,
+          "revision": "1"
+        },
+        {
+          "caller": "It happened yesterday, in the warehouse.",
+          "status": 200,
+          "agent": "What evidence, if any, is available?",
+          "sse_done": true,
+          "ms": 3895,
+          "revision": "2"
+        },
+        {
+          "caller": "Roles are enough, a shift lead stacked them there.",
+          "status": 200,
+          "agent": "Who was involved? Roles are enough.",
+          "sse_done": true,
+          "ms": 3252,
+          "revision": "3"
+        },
+        {
+          "caller": "I have a photo of it.",
+          "status": 200,
+          "agent": "Would you like to submit this report for human review?",
+          "sse_done": true,
+          "ms": 3949,
+          "revision": "4"
+        }
+      ],
+      "finalize": {
+        "status": 200,
+        "case": {
+          "case_id": "WB-5faa831660264a13a9204785b5bdeccc",
+          "reporter": "REPORTER_01",
+          "category": "safety",
+          "summary": "The report mentions an emergency exit.",
+          "persons": [],
+          "received_at": "2026-11-20T16:47:53.229276Z",
+          "decisions": [
+            {
+              "policy": "P5",
+              "action": "ALLOW",
+              "count": null
+            },
+            {
+              "policy": "P6",
+              "action": "HUMAN_ONLY",
+              "count": null
+            }
+          ],
+          "brane_status": "ok",
+          "brief": {
+            "facts": [
+              "The report mentions an emergency exit."
+            ],
+            "timeline": [
+              "Reported time: yesterday."
+            ],
+            "evidence": [
+              "Photo (original held locally)."
+            ]
+          }
+        }
+      },
+      "handler_view_ok": true
+    },
+    "health_call": {
+      "turns": [
+        {
+          "caller": "My supervisor keeps commenting on my burnout and medication in front of the team.",
+          "status": 422,
+          "error": "restricted_material",
+          "ms": 3
+        }
+      ],
+      "held": {
+        "error": "restricted_material",
+        "session_state": "held_for_review"
+      }
+    }
+  }
+}

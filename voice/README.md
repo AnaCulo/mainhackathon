@@ -6,6 +6,19 @@
 - **Version A**, recorded voice, is only demonstrated in a **closed test harness**. That means fully generated fictional caller audio, fabricated session details, and the custom-LLM route through BRANE.
 - If any part of the voice path can't be verified, demonstrate the text route only.
 
+## Status (20 Nov, 17:48)
+
+| Part | State |
+|---|---|
+| Voice path behind ElevenLabs: backend `/v1/chat/completions` (SSE) → live BRANE → model → bridge confirmation → n8n | **Works live.** Run `n8n/demo.sh --voice` to use [`harness.py`](harness.py). Scripted fictional transcript turns stand in for speech-to-text. A 4-turn safety call took 3–4 s per turn, got one fixed question per turn, was finalised by the bridge, and reached the n8n handler (timeline "yesterday", evidence "photo"). A health-data call was held on turn 1 (`restricted_material`, session `held_for_review`). Evidence: `evidence/voice_harness_*.json` |
+| Version B entry clip | **Done:** [`version_b_disclosure.m4a`](version_b_disclosure.m4a), 18 s. Generated with macOS `say` from the exact wording in `docs/voice-disclosure.md`. No audio or text left the machine. Re-generate it with an ElevenLabs stock voice if you prefer that sound |
+| ElevenLabs agent (job 3) | **Needs a team member with ElevenLabs credits.** Create the agent from `agent_config.json`, set Custom LLM → backend tunnel `/v1/chat/completions` with the `ELEVENLABS_BRIDGE_KEY` secret, and pass `elevenlabs_extra_body.session_id`. The backend side of this contract is what `harness.py` exercises |
+
+Fixes the live voice run needed:
+- BRANE's prompt guard flags the voice system prompt when it's scanned alone. System prompts are now previewed only inside the combined check.
+- OpenRouter sends an empty usage chunk after the stop chunk. The stream parser now accepts it, but only when it carries no content.
+- The location field was flagged as ADDRESS. Only category and summary now leave the backend.
+
 So ElevenLabs does three jobs here, none of which touch a real caller:
 
 | Job | What | Real caller data? |

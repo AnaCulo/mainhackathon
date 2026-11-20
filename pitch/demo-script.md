@@ -18,7 +18,9 @@ The recorded cut runs about 2:45 and uses a local synthetic voice for each speak
 
 **Shot.** Show the captured Case JSON fields from the local backend and the case reference.
 
-**Narration.** The local backend accepts the report. For this recording, the protection check and model are exact-input fixtures. The backend sends its real case object through the published, authenticated n8n webhook. The identity mapping stays local.
+**Narration.** The local backend accepts the report and builds a minimised draft. It sends only released sentences, through BRANE's live gateway, to the approved cloud model. BRANE previews show zero detections, and the completion comes back as cloud, allow, not redacted. The backend sends its real case object through the published, authenticated n8n webhook. The identity mapping stays local.
+
+*Live rehearsal: run `n8n/demo.sh --trace --hold` and show the printed outbound check and BRANE headers.*
 
 ### 0:50–1:09 · D
 
@@ -40,15 +42,15 @@ The recorded cut runs about 2:45 and uses a local synthetic voice for each speak
 
 ### 1:47–2:11 · B
 
-**Shot.** Show C’s open-policy baseline T4 row, then the disposable P4 and P5 test results. In a live rehearsal B runs node --test backend/intake.test.mjs before presenting and shows its output.
+**Shot.** Show the live policy-v2 rows from `submission/MAIN_Five_Tests_Template.csv`: T4, T5, T3, and the P3a/P3b pair. In a live rehearsal, B shows the PASS/FAIL lines from `n8n/demo.sh --trace`.
 
-**Narration.** The open-policy baseline failed the live bypass test. The embedded instruction reached the cloud. In disposable backend tests, the bypass fixture was blocked. When the check became unavailable, the backend returned five oh three, with zero additional model or webhook calls. Live enforcement still needs a reviewed rerun.
+**Narration.** With our policy live on BRANE, the bypass attempt is refused before any model runs. Health data stays local. Five mentions of one person become one token. An ordinary purchasing breach reaches the cloud as PERSON_01, while the forgery allegation never leaves. If any check fails, the backend returns five oh three, with zero model or webhook calls.
 
 ### 2:11–2:27 · D
 
-**Shot.** Show both benchmark runs and their quality criterion.
+**Shot.** Show the live trace timings and their quality criterion, then the manual result from `tests/manual_benchmark.py`.
 
-**Narration.** Across two local runs the handler could open the checked brief in eighty-six and one hundred forty-three milliseconds. Eight simultaneous replays created no extra case. The manual comparison is a separate timed exercise.
+**Narration.** Through the live gateway and model, the handler could open the checked brief in six to eight seconds, across four runs. The brief had the fact, the Monday timeline and the ledger evidence, with the decision pending. Our manual run took [MANUAL TIME] to the same finish line.
 
 ### 2:27–2:45 · D
 
@@ -60,5 +62,5 @@ The recorded cut runs about 2:45 and uses a local synthetic voice for each speak
 
 Start the one-command demo with `-Hold` in advance. Let it finish the automated checks. Open the pending case whose reference the terminal printed. D can use the first 30 seconds to frame the employer’s problem while the two-minute demo timer runs. A explains the seven-day and three-calendar-month rules. B has the baseline and local test output ready. C shows the local disclosure and synthetic text. Keep credentials and terminal environment files outside the recording. Leave substantive feedback queued for human approval until after the reminder is visible.
 
-In the recorded case, the reference is `WB-98b0095b-1675-4b1d-bf62-8739bf7cea5d`. The acknowledgement and handler capture occurred at 15:45:23 UTC. The scheduler recorded the feedback demo reminder at 15:47:26 UTC on 20 November. Each fresh rehearsal produces its own case ID. Run the manual benchmark with the same input and checks in [the business case](../docs/business-case.md). If a reviewed live BRANE rerun becomes available, replace B’s segment and the affected claims, then verify the new video length before upload.
+In the recorded case, the reference is `WB-98b0095b-1675-4b1d-bf62-8739bf7cea5d`. The acknowledgement and handler capture occurred at 15:45:23 UTC. The scheduler recorded the feedback demo reminder at 15:47:26 UTC on 20 November. Each fresh rehearsal produces its own case ID. Run the manual benchmark with the same input and checks in [the business case](../docs/business-case.md). The live BRANE rerun is now available. B’s segment and the timing claims above use it, as does slide 5. **The recorded video `Culo-demo.mp4` still shows the earlier fixture run.** Re-record segments 0:32–0:50, 1:47–2:11 and 2:11–2:27, fill in [MANUAL TIME], and check the video length before upload.
 

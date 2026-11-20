@@ -3,6 +3,7 @@
 #
 #   n8n/demo.sh                 fresh n8n + register, Finn's synthetic walkthrough, then stop
 #   n8n/demo.sh --hold          same, but keep both listeners running for a rehearsal
+#   n8n/demo.sh --voice         --python, then the closed voice harness (voice/harness.py)
 #   n8n/demo.sh --trace         --python, then the live evidence trace (n8n/live-trace.py --decide)
 #   n8n/demo.sh --python        also start the Python backend (backend/.env, live BRANE) on
 #                               127.0.0.1:8000 wired to this n8n webhook, and send live cases
@@ -10,12 +11,13 @@
 # Env overrides: N8N_PACKAGE (where n8n 2.48.7 is installed, default $TMPDIR/culo-n8n-2-48-7),
 #                PYTHON (interpreter with backend/requirements.txt installed, default python3).
 set -euo pipefail
-HOLD=0 PY=0 TRACE=0
+HOLD=0 PY=0 TRACE=0 VOICE=0
 for arg in "$@"; do
   case "$arg" in
     --hold) HOLD=1 ;;
     --python) PY=1 ;;
     --trace) PY=1 TRACE=1 ;;
+    --voice) PY=1 VOICE=1 ;;
     *) echo "unknown option $arg" >&2; exit 2 ;;
   esac
 done
@@ -74,6 +76,9 @@ if [ "$PY" = 1 ]; then
   "${PYTHON:-python3}" n8n/live-python.py "$CONFIG" "$ROOT/backend/.env" "$ROOT/data/synthetic_reports.json"
   if [ "$TRACE" = 1 ]; then
     "${PYTHON:-python3}" n8n/live-trace.py "$CONFIG" "$ROOT/backend/.env" "$ROOT/backend" "$ROOT/evidence" --decide
+  fi
+  if [ "$VOICE" = 1 ]; then
+    "${PYTHON:-python3}" voice/harness.py "$CONFIG" "$ROOT/backend/.env" "$ROOT/evidence"
   fi
 fi
 

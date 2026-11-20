@@ -41,19 +41,19 @@ Use exactly “Two invoice totals differ. The discrepancy appeared on Monday. Th
 
 Four later integration regression runs used the same timer and returned 179, 173, 133 and 166 ms. Across all six runs the observed range was 86–179 ms. The pitch and rough video report the two recorded benchmark runs.
 
-**Observed live runs through hosted BRANE, n = 2:** **7.62 s and 6.33 s**, range 6.3–7.6 s. The timer and finish line are the same as above. These runs used the Python backend (`backend/app`) with the real BRANE gateway (policy-v2, pinned fingerprint), the real cloud model `openrouter:openai/gpt-6-luna`, the published n8n webhook and the case register, all on one machine apart from BRANE and the model. Both handler views showed every required field:
+**Observed live runs through hosted BRANE, n = 4:** **7.62, 6.33, 7.16 and 6.22 s**, range 6.2–7.6 s. The timer and finish line are the same as above. These runs used the Python backend (`backend/app`) with the real BRANE gateway (policy-v2, pinned fingerprint), the real cloud model `openrouter:openai/gpt-6-luna`, the published n8n webhook and the case register, all on one machine apart from BRANE and the model. Every handler view showed every required field:
 - reported fact: *"The report describes a discrepancy between invoice totals."*
 - timeline: *Monday*
 - evidence: *ledger entries, original held locally*
 - *Human decision · pending*
 - no person or conclusion added
 
-Both traces also record:
+Every trace also records:
 - the outbound text, previewed at BRANE: route cloud, zero detections, payload identical to what the backend sent
 - the completion headers: `Routed-To: cloud`, `Redacted: false`
 - a decision of "investigate", recorded afterwards through the handler form (scripted for evidence; a person clicks it in the demo)
 
-The difference from the 86–179 ms runs is BRANE's preflight checks plus real model latency. **Use these live numbers for any claim about the deployed path.** Evidence: `evidence/live_trace_20261120-172546.json`, `evidence/live_trace_20261120-172635.json`. Repeat with `n8n/demo.sh --trace`, which needs Node 24 and `backend/.env` with the team key and pinned fingerprint.
+The difference from the 86–179 ms runs is BRANE's preflight checks plus real model latency. **Use these live numbers for any claim about the deployed path.** Evidence: `evidence/live_trace_20261120-172546.json`, `-172635.json`, `-173954.json` and `-174739.json`. The last run used the minimised payload (category and summary only). Repeat with `n8n/demo.sh --trace`, which needs Node 24 and `backend/.env` with the team key and pinned fingerprint.
 
-**Manual comparison pending.** Give the same text to a teammate who has not seen the prepared brief. Supply a blank restricted case form and the same four checks. Have a second person start the timer on release and stop it on successful handler access. Record minutes/seconds, missing facts, any corrections and sample size. Repeat failed quality checks with the clock running. Report observed differences only after this exercise. The 30-minute illustrative saving above is a pricing sensitivity assumption.
+**Manual comparison pending.** Run `python3 tests/manual_benchmark.py`, which follows this protocol, times the run and compares it with the live traces. Give the same text to a teammate who has not seen the prepared brief. Supply a blank restricted case form and the same four checks. Have a second person start the timer on release and stop it on successful handler access. Record minutes/seconds, missing facts, any corrections and sample size. Repeat failed quality checks with the clock running. Report observed differences only after this exercise. The 30-minute illustrative saving above is a pricing sensitivity assumption.
 

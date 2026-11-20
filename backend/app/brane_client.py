@@ -77,7 +77,12 @@ class BraneClient:
             "policy_verified",
             metadata={"policy_sha256": self.s.policy_digest},
         )
+        # System prompts are server-owned constants. Previewed alone, BRANE's prompt guard
+        # flags them as instructions (voice prompt, 20 Nov), so each caller-derived message
+        # is previewed alone and the system prompt only inside the combined preview below.
         for message in messages:
+            if message["role"] == "system":
+                continue
             prompt = message["content"]
             preview = await self._json(
                 "POST",
@@ -101,7 +106,7 @@ class BraneClient:
         # (20 Nov: every message of P3a previewed clean alone, but the live call was
         # redacted). Preview the combined text too, so that case stops before any model call.
         combined = "\n\n".join(message["content"] for message in messages)
-        if len(messages) > 1:
+        if any(m["role"] == "system" for m in messages) or len(messages) > 1:
             preview = await self._json(
                 "POST",
                 "/policy/test",
@@ -179,10 +184,17 @@ class BraneClient:
             payload = line[5:].strip()
             if payload == "[DONE]" and stopped:
                 return "".join(parts)
-            if stopped or payload == "[DONE]":
+            if payload == "[DONE]":
                 raise Stop(502, "invalid_gateway_stream")
             (choice,) = json.loads(payload)["choices"]
             delta = choice["delta"]
+            if stopped:
+                # OpenRouter sends a trailing usage chunk after the stop chunk (20 Nov live
+                # voice turn). Accept it only if it carries no content and no other finish.
+                if delta.get("content") or choice.get("finish_reason") not in (None, "stop") \
+                        or set(delta) - {"role", "content"}:
+                    raise Stop(502, "invalid_gateway_stream")
+                continue
             if choice.get("index") != 0 or set(delta) - {"role", "content"}:
                 raise Stop(502, "invalid_gateway_stream")
             value = delta.get("content") or ""

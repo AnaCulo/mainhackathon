@@ -83,12 +83,11 @@ def test_model_receives_only_pseudonyms_for_five_mentions(setup, submit):
     requests = [
         b for url, b, _ in setup[1].requests if url.endswith("/chat/completions")
     ]
-    # Gateway form of PERSON_01: BRANE flags the bare case token as a name.
-    assert (
-        json.loads(requests[0]["messages"][1]["content"])["person_mentions"]
-        == ["#P01"] * 5
-    )
-    assert "PERSON_01" not in json.dumps(requests)
+    sent = json.loads(requests[0]["messages"][1]["content"])
+    # Minimised payload: only category/summary draft and released observation sentences.
+    assert set(sent) == {"draft", "observations"}
+    assert set(sent["draft"]) == {"category", "summary"}
+    assert "John" not in json.dumps(requests) and "PERSON_01" not in json.dumps(requests)
 
 
 def test_gateway_token_round_trip():

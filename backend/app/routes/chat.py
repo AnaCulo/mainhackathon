@@ -70,7 +70,14 @@ async def chat(body: Chat, request: Request):
                 if QUESTIONS[k] not in asked
             ]
             allowed = candidates or [QUESTIONS["confirm"]]
-            data = {"screened_history": screened.fields, "allowed_questions": allowed}
+            # Only category and summary leave; the rest of the screened history stays local.
+            data = {
+                "screened_history": {
+                    "category": screened.fields["category"],
+                    "summary": screened.fields["summary"],
+                },
+                "allowed_questions": allowed,
+            }
             result = await while_connected(
                 request,
                 s.brane.complete(

@@ -50,3 +50,8 @@ Ordinary policy breaches linked to one accused person now produce a tokenised cl
 - T2, T4, T5, P3b, E2 and E3 were held locally.
 
 **Combined preview.** BRANE scans a live completion as one conversation, and context changes detection. On 20 Nov every P3a message previewed clean on its own, but the live call came back `Action: placeholder, Redacted: true`. The backend rejected the result (`unverified_completion_headers`), but a cloud call had already happened. The preflight now also previews all messages joined. A case like that stops at the preview, before any model call.
+
+**Voice and minimisation fixes (20 Nov, 17:45).** These came out of the live voice harness (`voice/harness.py`, `n8n/demo.sh --voice`):
+1. BRANE's prompt guard flags a server-owned system prompt when it is scanned alone. System prompts are now previewed only inside the combined preview, and caller-derived messages are still previewed one by one.
+2. OpenRouter sends an empty usage chunk after the stop chunk. The stream parser accepts it only if it carries no content and no other finish reason.
+3. BRANE flagged the `location` field as ADDRESS and "who" as PERSON. The model now receives only the category/summary draft and the released observation sentences (GDPR Art. 5(1)(c)). Time, place, evidence and follow-up fields stay local and are merged back in after validation.

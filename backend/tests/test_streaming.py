@@ -123,3 +123,12 @@ async def test_disconnect_cancels_inflight_gateway_call():
     with pytest.raises(Stop, match="client_disconnected"):
         await while_connected(Gone(), waiting())
     assert cancelled.is_set()
+
+
+@pytest.mark.parametrize("fault,status", [("trailing_usage", 200), ("trailing_content", 502)])
+def test_trailing_chunk_after_stop(setup, fault, status):
+    # Live OpenRouter streams send one empty usage chunk after the stop chunk.
+    client, double, _ = setup
+    double.fault = fault
+    r = client.post("/v1/chat/completions", json=body(str(uuid4()), "A warehouse emergency exit was blocked."), headers=VOICE)
+    assert r.status_code == status

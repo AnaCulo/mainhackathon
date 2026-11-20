@@ -102,6 +102,12 @@ class Double:
                 )
                 for v, f in parts
             ]
+            if self.fault in {"trailing_usage", "trailing_content"}:
+                # OpenRouter's trailing chunk after stop (empty delta), or a hostile variant.
+                extra = "late text" if self.fault == "trailing_content" else ""
+                lines.append("data: " + json.dumps({"choices": [{"index": 0, "delta": {
+                    "role": "assistant", "content": extra}, "finish_reason": "stop"}],
+                    "usage": {"total_tokens": 1}}))
             if self.fault != "truncated":
                 lines.append("data: [DONE]")
             return httpx.Response(
