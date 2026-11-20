@@ -16,7 +16,7 @@ MANIFEST = "submission/MANIFEST.json"
 ARCHIVES = ("working-agent.zip", "BuilderBase-package.zip")
 SECRET = re.compile(
     rb"brn_" rb"live_|sk-[A-Za-z0-9]{20,}|Bearer [A-Za-z0-9_-]{24,}|"
-    rb"xi-api-key: [A-Za-z0-9]|API_KEY" rb"=[^\s]+", re.IGNORECASE
+    rb"xi-api-key: [A-Za-z0-9]|API_KEY" rb"""=(?!(?:""|'')(?=[\s,);]|$))[^\s]+""", re.IGNORECASE
 )
 
 
