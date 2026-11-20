@@ -23,7 +23,7 @@ Any failed or unverifiable check returns 503 with zero model or webhook calls. A
 
 | Item | Hand-in copy | Status |
 |---|---|---|
-| Working agent and source | [Working agent ZIP](working-agent.zip) | The live Python backend (`backend/app`, used for every live BRANE result), the Node implementation used for the original recording, workflow export, BRANE policy-as-code, setup, tests, legal and voice materials. Run the live chain with `n8n/demo.sh --trace` (macOS/Linux) or see n8n/README.md. |
+| Working agent and source | [Working agent ZIP](working-agent.zip) | The live Python backend (`backend/app`, used for every live BRANE result), the Node implementation used for the original recording, workflow export, BRANE policy-as-code, setup, tests, legal and voice materials. Start the presenter with `n8n/demo.sh --hold` or `.\n8n\demo.ps1 -Hold` and submit a fresh report. The private configuration and smoke test are in n8n/README.md. |
 | Business case | [Dutch employer business case](../docs/business-case.md) | Sourced pricing and market bands, buyer economics, live and fixture timings, and the manual exercise (`tests/manual_benchmark.py`). |
 | Editable pitch | [PowerPoint deck](../pitch/Culo-pitch.pptx) | Six rendered slides and speaker notes. |
 | Demo video | [Playable MP4](../pitch/Culo-demo.mp4) | Approximately 2:45, synthetic narration, actual review captures. **Recorded on the fixture gateway, before the live run.** The demo script marks the segments to re-record. |
@@ -32,7 +32,7 @@ Any failed or unverifiable check returns 503 with zero model or webhook calls. A
 | Security evidence | [Populated test CSV](MAIN_Five_Tests_Template.csv) | 13 rows (T1–T5, T5b, E1–E5, P3a/P3b), observed live on policy-v2 through the backend, with the direct BRANE gate run alongside. C and A must approve the final evidence. |
 | Workflow results | [D’s verification record](../n8n/verification.md) | Separates published workflow, backend doubles and live baseline. |
 
-The repo link alone omits local Node and Person D files at this revision. Supply the working-agent archive with the hand-in. If the platform requires a hosted source or video link, D must publish the reviewed assets under the team’s authorised project and check access from the jury’s perspective. The hand-in CSVs are under submission/. The blank starter files in docs/reference/ are unsuitable for upload.
+The working-agent archive includes the presenter launchers and their source. Supply the reviewed archive with the hand-in. If the platform requires a hosted source or video link, D must publish the reviewed assets under the team’s authorised project and check access from the jury’s perspective. The hand-in CSVs are under submission/. The blank starter files in docs/reference/ are unsuitable for upload.
 
 ## Remaining handoffs · Europe/Amsterdam
 

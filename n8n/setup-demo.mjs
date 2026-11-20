@@ -1,11 +1,13 @@
-// Provision ONLY the new, unclaimed disposable loopback instance on port 5689.
+// Provision only the new, unclaimed disposable loopback instance.
 import {randomBytes} from 'node:crypto';
 import {readFileSync,writeFileSync,mkdtempSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-const origin='http://127.0.0.1:5689',token=()=>randomBytes(32).toString('hex');
+const origin='http://127.0.0.1:'+Number(process.env.DEMO_N8N_PORT??5689),token=()=>randomBytes(32).toString('hex');
 const directory=mkdtempSync(join(tmpdir(),'culo-demo-')),file=join(directory,'demo.env');
 const config={CASE_DIR:directory,N8N_ORIGIN:origin,N8N_TOKEN:token(),WORKER_TOKEN:token(),HANDLER_PASSWORD:token(),DEMO_CLOCK:'1',SYNTHETIC_MAILBOX_CASES:'WB-0007',HANDLER_REF:'handler',N8N_WEBHOOK_URL:origin+'/webhook/protected-case'};
+config.DEMO_REGISTER_PORT=Number(process.env.DEMO_REGISTER_PORT??8788);
+config.DEMO_INTAKE_PORT=Number(process.env.DEMO_INTAKE_PORT??8000);
 let cookie='',key='';
 async function call(path,method='GET',body){
   const headers={'content-type':'application/json'};
@@ -24,6 +26,10 @@ const {data:scopes}=await call('/rest/api-keys/scopes');
 const issue=async(label,scopes)=>(await call('/rest/api-keys','POST',{label,scopes,expiresAt:Math.floor(Date.now()/1000)+86400})).data.rawApiKey;
 key=await issue('Demo setup',scopes.filter(s=>['credential:create','workflow:create','workflow:activate','workflow:publish','dataTable:create'].includes(s)));
 const wf=JSON.parse(readFileSync(new URL('protected-case.json',import.meta.url)));
+for(const node of wf.nodes){
+  if(node.type==='n8n-nodes-base.httpRequest')
+    node.parameters.url=node.parameters.url.replace('http://127.0.0.1:8788/', 'http://127.0.0.1:'+config.DEMO_REGISTER_PORT+'/');
+}
 for(const [name,value] of [['Protected intake',config.N8N_TOKEN],['Local dispatcher',config.WORKER_TOKEN]]){
   const cred=await call('/api/v1/credentials','POST',{name,type:'httpHeaderAuth',data:{name:'Authorization',value:'Bearer '+value}});
   for(const n of wf.nodes)if(n.credentials?.httpHeaderAuth.name===name)n.credentials.httpHeaderAuth.id=cred.id;

@@ -1,0 +1,111 @@
+{
+  "environment": "Three isolated loopback instances launched with n8n/demo.ps1 -Isolated -Hold on Windows, Node 24, Python 3.13 and n8n 2.48.7. Each Chrome session opened the review queue, followed the intake link, typed a fresh permitted synthetic report and clicked Prepare case for review.",
+  "github_master_inspected": "366eca524ed8df71ddea63b327394dd0d5d8ac9f",
+  "live_brane": "Unverified. No team BRANE_API_KEY or private backend environment file was available. The hosted /models endpoint required authentication (401).",
+  "gitlab_deployment": "Unverified. The supplied URL and configured remote identify GitHub. Neither published branch contained a GitLab CI file or deployment URL.",
+  "controls": {
+    "simulated_gateway_control": "Only hosted HTTP responses were simulated by backend/tests/doubles.py in an isolated test process. The header values and model in this row are simulated. The presenter, published n8n webhook, register and pending handler page ran locally. No live model executed.",
+    "gateway_outage": "Test-only DNS denial for brane.ai-z.io inside the isolated intake process. Loopback and the real n8n webhook remained available. The browser showed the error and the queue was empty.",
+    "missing_credentials": "No hosted credential or policy pin. The browser showed the error and the queue was empty."
+  },
+  "cases": [
+    {
+      "scenario": "missing_credentials",
+      "browser_http_status": 503,
+      "browser_heading": "Submission failed",
+      "checkout_head": "198d06d56f2e2334eb1762288bdb54a81c676ee8",
+      "presenter_source_sha256": "71d30f5b29a32548e3d224af0a34cf53e6cbb362e3ff1eb074b4f7b6f1b6fac7",
+      "timestamp_utc": "2026-11-20T19:18:51.514141Z",
+      "request_id": "9da91ca1-97ae-46fe-8755-23061666145a",
+      "case_id": "WB-b5f1f17f3f9f4fd9921a1419aab08aab",
+      "reason": "gateway_not_configured",
+      "completion_attempts": 0,
+      "validated_model_results": 0,
+      "completion_headers": {},
+      "model": null,
+      "n8n_delivery_attempts": 0,
+      "outbox_state": null,
+      "registered": false,
+      "human_decision": null
+    },
+    {
+      "scenario": "gateway_outage",
+      "browser_http_status": 503,
+      "browser_heading": "Submission failed",
+      "checkout_head": "198d06d56f2e2334eb1762288bdb54a81c676ee8",
+      "presenter_source_sha256": "71d30f5b29a32548e3d224af0a34cf53e6cbb362e3ff1eb074b4f7b6f1b6fac7",
+      "timestamp_utc": "2026-11-20T19:18:52.016070Z",
+      "request_id": "9c6e989b-a8de-4818-bdf4-1557bb9cb504",
+      "case_id": "WB-285dba8acf164b289024ced6ea2879b6",
+      "reason": "gateway_unverifiable",
+      "completion_attempts": 0,
+      "validated_model_results": 0,
+      "completion_headers": {},
+      "model": null,
+      "n8n_delivery_attempts": 0,
+      "outbox_state": null,
+      "registered": false,
+      "human_decision": null
+    },
+    {
+      "scenario": "simulated_gateway_control",
+      "browser_http_status": 200,
+      "browser_heading": "Case ready for human review",
+      "checkout_head": "198d06d56f2e2334eb1762288bdb54a81c676ee8",
+      "presenter_source_sha256": "71d30f5b29a32548e3d224af0a34cf53e6cbb362e3ff1eb074b4f7b6f1b6fac7",
+      "timestamp_utc": "2026-11-20T19:18:51.514042Z",
+      "request_id": "6c464d63-f40c-4c44-ad78-291d7ef80945",
+      "case_id": "WB-0b4ccf146930482caa1aa88d63be5ec2",
+      "reason": null,
+      "completion_attempts": 1,
+      "validated_model_results": 1,
+      "completion_headers": {
+        "X-Brane-Routed-To": "cloud",
+        "X-Brane-Action": "allow",
+        "X-Brane-Redacted": "false",
+        "X-Brane-Pii-Detected": "false",
+        "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+        "X-Brane-Lane": "governed"
+      },
+      "model": "openrouter:openai/gpt-6-luna",
+      "n8n_delivery_attempts": 1,
+      "outbox_state": "delivered",
+      "registered": true,
+      "human_decision": "pending"
+    }
+  ],
+  "original_presenter": {
+    "fixture_source_commit": "91062580a3fa80390797c4afb56cc214f987b1f9",
+    "entry_points": [
+      "n8n/demo.ps1 -Hold",
+      "n8n/demo.sh --hold"
+    ],
+    "path": "The original launchers provisioned n8n and the register, then ran n8n/walkthrough.mjs. That script submitted its fixed synthetic report to backend/server.mjs POST /reports. backend/intake.mjs used backend/integrations.mjs to call the ephemeral loopback check and chat servers created inside the walkthrough. The fixed category and sentence indices built the case shown by the handler review page. The queue had no text entry form. The GitHub MP4 is the historical fixture recording."
+  },
+  "packaged_smoke": {
+    "description": "Extracted working-agent ZIP, Bash launcher on Windows, same test-only hosted transport, real local n8n. The unattended form smoke verified the handler link on the packaged code. The model and gateway headers below are simulated.",
+    "checkout_head": null,
+    "presenter_source_sha256": "15789ec93342a277f2b3f5ee0c99be7217396573baf4a95eaa776ef3504cd985",
+    "timestamp_utc": "2026-11-20T19:20:27.126100Z",
+    "request_id": "f8f285a9-745d-41eb-ab70-cb33e3dc505e",
+    "case_id": "WB-bc6c978b79014ea68634fe3f6735e826",
+    "reason": null,
+    "completion_attempts": 1,
+    "validated_model_results": 1,
+    "completion_headers": {
+      "X-Brane-Routed-To": "cloud",
+      "X-Brane-Action": "allow",
+      "X-Brane-Redacted": "false",
+      "X-Brane-Pii-Detected": "false",
+      "X-Brane-Model-Resolved": "openrouter:openai/gpt-6-luna",
+      "X-Brane-Lane": "governed"
+    },
+    "model": "openrouter:openai/gpt-6-luna",
+    "n8n_delivery_attempts": 1,
+    "outbox_state": "delivered",
+    "registered": true,
+    "human_decision": "pending",
+    "form_http_status": 200,
+    "review_link_verified": true
+  }
+}

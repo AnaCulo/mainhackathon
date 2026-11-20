@@ -56,6 +56,11 @@ class Double:
         assert req.headers["authorization"] == "Bearer test-tenant"
         if self.fault == "timeout":
             raise httpx.ReadTimeout("synthetic failure")
+        if req.url.path.endswith("/models"):
+            assert req.method == "GET"
+            return httpx.Response(200, json={"data": [
+                {"id": "auto" if self.fault == "model_missing" else MODEL}
+            ]})
         if req.url.path.endswith("/policy"):
             return httpx.Response(200, json={} if self.fault == "drift" else POLICY)
         if req.url.path.endswith("/policy/test"):

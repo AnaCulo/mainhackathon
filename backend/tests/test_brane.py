@@ -13,6 +13,7 @@ from .doubles import CONTROL, Double
     [
         ("timeout", 503, False),
         ("drift", 503, False),
+        ("model_missing", 503, False),
         ("refusal", 422, False),
         ("preview", 503, False),
         ("headers", 503, True),

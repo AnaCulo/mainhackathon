@@ -20,6 +20,7 @@ For each model request the adapter performs the following operations against the
 
 | Operation | Release condition | Failure behavior |
 | --- | --- | --- |
+| GET /models | Catalog lists the exact approved OpenAI ID | 503 before sending a prompt |
 | GET /policy | Reviewed digest, recognised summary, semantic rules active, local/refuse controls enabled | Reject before completion |
 | POST /policy/test for each exact message body with executeCompletion=false | Clean cloud preview, identical outgoing preview text, empty category and semantic matches, negative injection flag | Withhold on a different route, detection, missing field or altered payload |
 | POST /chat/completions | Fixed model ID and server-constructed messages only | One attempt. No direct provider request, retry or alternate model |

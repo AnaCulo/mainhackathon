@@ -1,38 +1,54 @@
 # Protected case workflow
 
-## Reproduce the demo
+## Run the presenter
 
-On Windows with Node 24 and npm, extract the working-agent ZIP or use this checkout. From its root run:
+Use the checkout or extract the working-agent ZIP. Install Node 24, npm and Python 3.13. In a private virtual environment, run `python -m pip install -r backend/requirements.txt` from the repository root. Set `PYTHON` to that interpreter if it is outside PATH. The first launch installs n8n 2.48.7 in the user's temp directory. Use a private, unsynced temp directory on this machine.
+
+Put the following settings in the backend's private environment or secret store. For a private file, set `DEMO_BACKEND_ENV` to its absolute path. The existing `backend/.env` is also supported. Process environment values take precedence.
+
+| Setting | Presenter value |
+| --- | --- |
+| `BRANE_API_KEY` | Team key from the private access email, used as the hosted bearer |
+| `BRANE_POLICY_SHA256` | SHA-256 of the team's reviewed, approved tenant policy. Compare against the reviewed export before the demo. The backend verifies the pin on every request. |
+| `BRANE_BASE_URL` | `https://brane.ai-z.io/api/v1` (default and only approved origin) |
+| `BRANE_MODEL` | `openrouter:openai/gpt-6-luna` (default and only approved model) |
+| `BRANE_TIMEOUT_SECONDS` | Optional total gateway deadline, default 30 seconds |
+
+On Windows run:
 
 ```powershell
+$env:DEMO_BACKEND_ENV = "$env:LOCALAPPDATA\whistleblower.env"
 .\n8n\demo.ps1 -Hold
 ```
 
-The first run installs n8n 2.48.7 in the user's temp directory. It needs npm network access and free loopback ports 5689 and 8788. A fresh private n8n profile receives two random Header Auth credentials, the imported and published workflow and a Data Table. A second local service owns the transaction register and authorised form. The command runs the synthetic smoke and leaves its main case pending for a person. Open **http://127.0.0.1:8788/review** and select the case ID printed by the command. Log in as `handler` using HANDLER_PASSWORD in the indicated private demo.env. Keep the password off screen. Select an action, supply the reason and affirm no conflict. Leave feedback unapproved to see the two-minute reminder. Refresh the form after the next 15-second tick. Press Enter in the terminal to stop the two listeners. Local profiles, captures and credentials stay in the private temp directory for inspection.
+On macOS or Linux run:
 
-```powershell
-.\n8n\demo.ps1
-node --test n8n/register.test.mjs backend/intake.test.mjs
+```sh
+export DEMO_BACKEND_ENV="$HOME/.config/culo/whistleblower.env"
+./n8n/demo.sh --hold
 ```
 
-The first command exercises and stops a fresh instance, including all three human choices via scripted form submissions. The second checks boundary cases. To verify the published Python variant separately, use CPython 3.13+ on Windows and install its requirements in a disposable environment and add `-PythonBackend <path-to-3c7dda9/backend> -PythonExecutable <path-to-python>` to the first command.
+When injecting deployment secrets directly, omit the file setting. Both launchers run `n8n/demo.py`. It starts a fresh, loopback-only n8n instance, imports and activates the protected-case workflow, starts the register and serves the presenter from `app.demo:create_demo`. It generates the intake bearer, storage key, handler password and webhook credentials for this instance. Only the intake backend receives the BRANE credential among the services. `BRANE_TOKEN`, `BRANE_CHECK_URL` and `BRANE_CHAT_URL` belong to the separate Node loopback adapter.
 
-## macOS / Linux, and the live Python backend
+Open the printed **Submit** URL (normally http://127.0.0.1:8000/demo), or follow **Submit a synthetic report** on the handler queue at http://127.0.0.1:8788/review. Use `handler` and the generated `HANDLER_PASSWORD` from the indicated private file. Default ports are 8000 for intake, 5689 for n8n, 5679 for its task broker and 8788 for review. Add `-Isolated` or `--isolated` to use fresh ports alongside a running demo. Press Enter in the launcher to stop this instance.
 
-`n8n/demo.sh` does the same as `demo.ps1`. It needs Node 24 (n8n 2.48.7 requires it) and npm on PATH. `--hold` keeps the listeners running.
+### Synthetic smoke test
 
-```bash
-n8n/demo.sh --python --hold
+Enter “Two invoice totals differ. The discrepancy appeared on Thursday. The ledger has both entries.” Click **Prepare case for review**. On success the form shows a grounded summary, request ID and a link to that case. Open it and check the reported fact, Thursday timeline, ledger evidence and **Human decision · pending**. A designated handler records the decision. For an unattended submission through this same form, omit the hold flag. `-Trace` or `--trace` also submits the form and prints the receipt while holding on a successful run.
+
+To inspect a manual submission, run the following with the printed private config path and the request ID from the screen. The trace joins the backend audit, outbox and register, and writes a content-free JSON receipt to the private case directory. The source fingerprint identifies the actual launcher and backend even for an uncommitted checkout or archive.
+
+```sh
+python n8n/live-trace.py <private-demo.env> --request-id <uuid>
 ```
 
-`--python` also starts the Python backend from `backend/` on 127.0.0.1:8000, using `backend/.env` (live BRANE, pinned policy-v2). It points the backend at this instance's webhook (`http://127.0.0.1:5689/webhook/protected-case`, bearer = N8N_TOKEN from the demo config) and runs `n8n/live-python.py`. Set `PYTHON` to an interpreter that has `backend/requirements.txt` installed.
+A refusal or local hold shows **Submission failed** with HTTP 422. Missing credentials or policy pin, unavailable catalog or protection check, timeout, or unverifiable route give 503. An unusable model answer or unconfirmed webhook gives 502. BRANE failures create no successful workflow delivery. A webhook failure after a validated completion may leave a pending outbox entry. After a timeout during completion, upstream execution is unknown. The trace distinguishes an attempted completion from a validated result.
 
-The Python backend accepts plain HTTP only to a numeric loopback host (`127.0.0.1` or `::1`). Every other webhook must use HTTPS.
+For a failure smoke, start a separate isolated instance with `BRANE_API_KEY` empty, submit a fresh permitted report and verify 503, zero completion attempts, zero delivery attempts and an empty queue. Never change the shared tenant policy to simulate an outage. The recorded open-policy baseline failed protection tests. Use only permitted synthetic controls until the current policy and release behavior are independently verified.
 
-Verified 20 Nov, macOS, Node 24.22.3:
-- The walkthrough passed.
-- Live cases T1, P3a and T3 went through BRANE into n8n, and the handler review page shows their protected summaries.
-- T5, P3b and T4 were held locally by the backend and never reached n8n.
+### Explicit offline tests
+
+`-Offline` or `--offline` selects the original fixed-report walkthrough on its disposable default ports. It uses simulated BRANE and a real local n8n workflow. Run `node --test n8n/register.test.mjs backend/intake.test.mjs` and, from `backend/`, `python -m pytest -q` for the contract and presenter regressions. Set `N8N_PACKAGE` to an installed n8n 2.48.7 package directory to include the default-launcher regression. It starts a real, isolated n8n instance and submits the presenter form without a team key. The Unix options `--python` and `--voice` also run the historical report suite or the closed voice harness against the governed backend on the default ports.
 
 ## Import into an existing local instance
 
@@ -42,7 +58,7 @@ Verified 20 Nov, macOS, Node 24.22.3:
 4. Set CASE_DIR to a private unsynced directory. Set HANDLER_REF to the designated synthetic handler and HANDLER_PASSWORD to its unique password. Place settings in a private environment file, then run `node --env-file=<private-file> n8n/service.mjs`. The service binds to 127.0.0.1:8788. SQLite creates its tables automatically. Keep n8n, the register and the identity store under separate service identities for any deployment. This demo runs as the local user.
 5. Publish the workflow. Use the **production** POST path `/webhook/protected-case`, with the chosen n8n origin, in Person B’s N8N_WEBHOOK_URL. Node uses N8N_TOKEN and Python uses N8N_WEBHOOK_SECRET for the same bearer. The raw JSON body must be the case. Set `Idempotency-Key` to its exact ID. The Node sender permits loopback HTTP. The Python branch’s normal deployment config requires a verified HTTPS endpoint. Its local compatibility test forwards through a test transport.
 6. Set DEMO_CLOCK=1 **only** for synthetic cases. This opt-in is saved when each case is first accepted. Previously accepted cases retain their original settings. Prepare a synthetic return route by exact case ID using SYNTHETIC_MAILBOX_CASES, or run `node --env-file=<private-file> n8n/service.mjs route <case-id>` after receipt. It explicitly binds a case-scoped test mailbox. With no route, the dispatcher records unreachable. The reporter token never resolves to a destination. The designated email channel is captured locally at an .invalid address. Neither adapter sends external messages.
-7. With the private demo config loaded, `node --env-file=<private-file> n8n/walkthrough.mjs --hold` runs the same synthetic entry points on the disposable ports. To inspect actual dispatches locally, use `node --env-file=<private-file> n8n/service.mjs inbox <case-id>`.
+7. The explicitly selected offline walkthrough uses the fixed synthetic report on disposable ports. The presenter form is available through the launch commands above. To inspect actual dispatches locally, use `node --env-file=<private-file> n8n/service.mjs inbox <case-id>`.
 
 ## Persistence, failure and permissions
 

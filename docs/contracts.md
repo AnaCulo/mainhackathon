@@ -1,6 +1,6 @@
 # Whistleblower intake integration
 
-Use synthetic reports throughout the hackathon. Person B's service runs as a single Node 24 process. Run the contract tests from the repository root with `node --test backend/intake.test.mjs`. They start disposable HTTP services on loopback and use in-memory SQLite. They exercise the application boundaries. The team still needs to run Person C's protocol against the actual BRANE deployment.
+The [presenter launchers](../n8n/README.md) use the Python intake handler and its hosted BRANE adapter. The contract below describes the separate Node implementation. Use synthetic reports throughout the hackathon. Person B's service runs as a single Node 24 process. Run the contract tests from the repository root with `node --test backend/intake.test.mjs`. They start disposable HTTP services on loopback and use in-memory SQLite. They exercise the application boundaries. The team still needs to run Person C's protocol against the actual BRANE deployment.
 
 ## Running the backend
 
@@ -32,7 +32,7 @@ Pass an opaque, unique per-call ID as `elevenlabs_extra_body.conversation_id`. S
 
 ## BRANE handoff for AI-Z and Person A
 
-The challenge brief describes enforcement behavior. The deployment-specific API and credentials are pending. The two operations below are **the backend's provisional adapter contract**, to be mapped in `backend/integrations.mjs` once AI-Z supplies the interface. Configure the approved OpenAI deployment and P1–P5 in BRANE before running live tests.
+The challenge brief describes enforcement behavior. The following two operations form the Node loopback adapter contract. The hosted interface is documented in [BRANE.md](../BRANE.md). A hosted policy preview supplies routing predictions and cannot establish local P1–P4 span coverage. Configure the approved OpenAI deployment and P1–P5 in BRANE before running live tests.
 
 | Policy | Required behavior |
 | --- | --- |
@@ -46,4 +46,4 @@ The challenge brief describes enforcement behavior. The deployment-specific API 
 1. The local check operation receives `{text, policies}`. It must inspect the full text locally, without external inference, and report every sensitive span. A successful result contains `complete: true`, `checked: ["P1","P2","P3","P4"]`, and `findings`. Each finding includes `policy`, zero-based inclusive `start`, and exclusive `end` in UTF-16 code units. For P2, provide a stable `entity` string for aliases of the same person. An empty findings array means all checks completed and found nothing. Detection of unmarked identifiers and paraphrased instructions depends on this component.
 2. The local chat operation receives OpenAI-compatible Chat Completions requests with a server-selected model. BRANE must enforce the approved policy profile on every request and route only to the approved OpenAI model. Disable raw input logging and identity restoration in model responses. The backend only accepts structured selections and constructs user-visible content from protected source sentences and fixed prompts.
 
-Both configured BRANE URLs must use a numeric loopback host. The backend refuses redirects and has no direct OpenAI client. Replace the adapter if the vendor uses a combined check-and-route API. Keep raw data inside the approved local boundary when doing so.
+Both configured BRANE URLs must use a numeric loopback host. The backend refuses redirects and has no direct OpenAI client. The presenter uses the Python local screener and case-scoped mapping before any hosted preview. Its adapter authenticates with BRANE_API_KEY, confirms the approved OpenAI model via GET /models, checks the reviewed policy and verifies the governed completion before releasing the case.

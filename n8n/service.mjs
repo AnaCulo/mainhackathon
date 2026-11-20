@@ -16,7 +16,7 @@ async function body(req) {
   for await(const chunk of req){size+=chunk.length;if(size>196608)reject(413);chunks.push(chunk);}
   return Buffer.concat(chunks).toString('utf8');
 }
-export function service(r,{wire,secret,password,sendTable}){
+export function service(r,{wire,secret,password,sendTable,intakePort}){
   if([wire,secret,password].some(s=>typeof s!=='string'||s.length<16) || new Set([wire,secret,password]).size!==3)throw Error('Configure three distinct secrets of 16 or more characters');
   const basic='Basic '+Buffer.from(r.actor+':'+password).toString('base64');
   const sign=(c,mode,expiry)=>createHmac('sha256',secret).update(JSON.stringify([c.id,c.task,c.actor,mode,expiry])).digest('hex');
@@ -59,7 +59,8 @@ export function service(r,{wire,secret,password,sendTable}){
       if(req.method==='GET' && req.url==='/review'){
         const links=r.db.prepare('SELECT id FROM cases WHERE actor=? ORDER BY rowid DESC').all(r.actor)
           .map(c=>'<li><a href="/review/'+encodeURIComponent(c.id)+'">'+esc(c.id)+'</a></li>').join('');
-        return reply(200,page('Review queue','<ul>'+links+'</ul>'),'text/html; charset=utf-8');
+        const intake=intakePort?'<a href="http://127.0.0.1:'+Number(intakePort)+'/demo">Submit a synthetic report</a>':'';
+        return reply(200,page('Review queue',intake+'<ul>'+links+'</ul>'),'text/html; charset=utf-8');
       }
       const match=/^\/review\/([^/?#]+)$/.exec(req.url),c=match && r.get(decodeURIComponent(match[1]));
       if(!c || c.actor!==r.actor)reject(404);
@@ -91,11 +92,13 @@ if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href){
   mkdirSync(dir,{recursive:true,mode:0o700});
   const sendTable=tableAdapter(e);
   const r=new Register(join(dir,'register.sqlite'),{actor:e.HANDLER_REF??'handler',demo:e.DEMO_CLOCK==='1',table:!!sendTable,
+    reviewBase:'http://127.0.0.1:'+Number(e.DEMO_REGISTER_PORT??8788),
     routes:(e.SYNTHETIC_MAILBOX_CASES??'').split(',').filter(Boolean)});
   const [cmd,id,kind,state]=process.argv.slice(2);
   if(cmd==='route')r.route(id);
   else if(cmd==='reconcile')r.reconcile(id,kind,state);
   else if(cmd==='inbox')console.table(r.db.prepare('SELECT * FROM inbox WHERE id=?').all(id));
   else if(cmd)throw Error('Unknown command');
-  else service(r,{wire:e.N8N_TOKEN,secret:e.WORKER_TOKEN,password:e.HANDLER_PASSWORD,sendTable}).listen(8788,'127.0.0.1');
+  else service(r,{wire:e.N8N_TOKEN,secret:e.WORKER_TOKEN,password:e.HANDLER_PASSWORD,sendTable,
+    intakePort:e.DEMO_INTAKE==='1'?e.DEMO_INTAKE_PORT:null}).listen(Number(e.DEMO_REGISTER_PORT??8788),'127.0.0.1');
 }

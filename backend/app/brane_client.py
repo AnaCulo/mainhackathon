@@ -55,10 +55,18 @@ class BraneClient:
     def _check_status(response):
         if response.status_code == 422:
             raise Stop(422, "gateway_refused")
+        if response.status_code in (401, 403):
+            raise Stop(503, "gateway_authentication_failed")
         if response.status_code != 200:
             raise Stop(503, "gateway_http_error")
 
     async def _preflight(self, messages, headers, audit):
+        catalog = await self._json("GET", "/models", headers)
+        models = catalog.get("data") if isinstance(catalog, dict) else None
+        if not isinstance(models, list) or not any(
+            isinstance(entry, dict) and entry.get("id") == MODEL for entry in models
+        ):
+            raise Stop(503, "approved_model_unavailable")
         policy = await self._json("GET", "/policy", headers)
         summary = policy.get("summary", {}) if isinstance(policy, dict) else {}
         required = (
@@ -125,6 +133,7 @@ class BraneClient:
                 raise Stop(422, "preview_withheld")
             if not (
                 preview["decision"]["route"] == "cloud"
+                and preview["outgoingCloudPayloadPreview"] == combined
                 and preview["detectedCategories"] == []
                 and preview["matchedSemanticCategories"] == []
                 and preview["promptInjection"]["detected"] is False
@@ -243,12 +252,16 @@ class BraneClient:
                             raw.extend(part)
                             if len(raw) > 65536:
                                 raise Stop(502, "invalid_gateway_response")
-                        (choice,) = json.loads(raw)["choices"]
-                        if choice["finish_reason"] != "stop" or choice["message"].get(
-                            "tool_calls"
-                        ):
-                            raise Stop(502, "incomplete_completion")
-                        result = choice["message"]["content"]
+                        try:
+                            (choice,) = json.loads(raw)["choices"]
+                            message = choice["message"]
+                            if message.get("refusal"):
+                                raise Stop(422, "gateway_refused")
+                            if choice["finish_reason"] != "stop" or message.get("tool_calls") or message.get("function_call"):
+                                raise Stop(502, "incomplete_completion")
+                            result = message["content"]
+                        except (KeyError, TypeError, AttributeError, ValueError, RecursionError):
+                            raise Stop(502, "invalid_gateway_response") from None
                     if not isinstance(result, str) or not result:
                         raise Stop(502, "invalid_gateway_response")
                     self.available = True
@@ -258,9 +271,11 @@ class BraneClient:
             if exc.reason == "gateway_refused":
                 audit("gateway", "REFUSE", success=False)
             raise
+        except (httpx.TimeoutException, TimeoutError):
+            self.available = False
+            raise Stop(503, "gateway_timeout") from None
         except (
             httpx.HTTPError,
-            TimeoutError,
             ValueError,
             KeyError,
             IndexError,
