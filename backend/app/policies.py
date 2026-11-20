@@ -45,7 +45,9 @@ class Screened:
     mappings: list[tuple[str, str, str]]
 
 
-def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
+def screen(
+    text: str, identities: list[Identity], *, voice=False, for_extraction=False
+) -> Screened:
     """Construct a new document exclusively from a closed vocabulary.
 
     Name recognition improves local indexing. It never authorizes a span of
@@ -57,6 +59,11 @@ def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
         raise Stop(422, "instruction_quarantined", "P4")
     if any(term in lowered for term in RULES["restricted"]):
         raise Stop(422, "restricted_material", "P3")
+
+    if any(re.search(pattern, lowered) for pattern in RULES["offence_patterns"]):
+        raise Stop(422, "restricted_material", "P3")
+    if any(re.search(pattern, lowered) for pattern in RULES["identifying_context"]):
+        raise Stop(422, "identifying_context", "P1")
 
     # Explicit identifiers take priority. Infer clear introductions and repeated
     # full names in subject position; omit unresolved details from model input.
@@ -110,6 +117,14 @@ def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
             ):
                 bind("person", [name])
 
+    if re.search(r"\b(?:fraud|bribery|theft|corruption)\b", lowered) and (
+        any(kind == "person" for _, _, kind in bindings.values())
+        or re.search(
+            r"\b(?:director|manager|supervisor|colleague|committing|accused|relative)\b",
+            lowered,
+        )
+    ):
+        raise Stop(422, "restricted_material", "P3")
     mentions = []
     counts = {"P1": 0, "P2": 0}
     mappings = []
@@ -151,7 +166,7 @@ def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
         if material:
             description += f" by {material}"
         topics.insert(0, ("safety", f"The reporter describes {description}."))
-    if not topics and not voice:
+    if not topics and not voice and not for_extraction:
         raise Stop(422, "local_review_required", "P5")
     category, summary = (
         topics[0]
@@ -204,5 +219,5 @@ def screen(text: str, identities: list[Identity], *, voice=False) -> Screened:
     for d in decisions:
         if d.action == "BLOCK":
             raise Stop(422, "identity_withheld", d.policy)
-    observations = list(dict.fromkeys(topics)) or [(category, summary)]
+    observations = list(dict.fromkeys(topics))
     return Screened(fields, observations, mentions, decisions, mappings)

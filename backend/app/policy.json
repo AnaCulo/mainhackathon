@@ -1,5 +1,5 @@
 {
-  "version": "synthetic-intake-1",
+  "version": "synthetic-intake-2",
   "P1": "PROTECT",
   "P2": "PROTECT",
   "P3": "LOCAL_ONLY",
@@ -65,5 +65,16 @@
       "misconduct|workplace concern|policy violation|workplace complaint",
       "The reporter raises a workplace concern for review."
     ]
+  ],
+  "offence_patterns": [
+    "\\b(?:fake|faked|fabricated|false|falsified|fraudulent)\\s+(?:\\w+\\s+){0,2}(?:invoices?|records?|payments?)\\b",
+    "\\b(?:embezzl\\w*|stealing|kickback to|falsif(?:y|ying|ied)|defraud\\w*)\\b",
+    "\\b(?:sent|diverted|routed|paid)\\b.{0,65}\\b(?:relative|spouse|brother|sister|personal account)\\b",
+    "\\b(?:committed|perpetrated|engaged in)\\s+(?:invoice |financial )?(?:fraud|bribery|theft)\\b"
+  ],
+  "identifying_context": [
+    "\\b(?:only|sole|single)\\b.{0,60}\\b(?:shift|technician|driver|operator|employee|supervisor|analyst)\\b",
+    "\\b(?:tiny|small|satellite) (?:office|depot|branch)\\b.{0,100}\\b(?:shift|[0-9]{1,2}:[0-9]{2})\\b",
+    "\\b(?:night shift|[0-9]{1,2}:[0-9]{2})\\b.{0,100}\\b(?:tiny|small) (?:office|depot|branch)\\b"
   ]
 }

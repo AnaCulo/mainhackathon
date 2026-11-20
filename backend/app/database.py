@@ -111,12 +111,18 @@ class Database:
             )
             return cid, received, None
 
-    def hold(self, cid, owner, reason):
+    def hold(self, cid, owner, reason, private_detail=None):
         with self.connection() as con:
             con.execute(
                 """UPDATE cases SET owner=NULL,status='held_for_review',brane_status=?,
-                updated_at=? WHERE case_id=? AND owner=?""",
-                (reason, now(), cid, owner),
+                updated_at=?,extraction=? WHERE case_id=? AND owner=?""",
+                (
+                    reason,
+                    now(),
+                    self.seal(private_detail) if private_detail else None,
+                    cid,
+                    owner,
+                ),
             )
 
     def finish(self, case, owner, extraction, mappings):

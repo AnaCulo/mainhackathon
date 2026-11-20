@@ -2,6 +2,7 @@ from functools import partial
 
 from . import agent
 from .audit import record
+from .fact_extraction import extract_local_facts
 from .models import Case, Decision
 from .n8n_client import deliver
 from .policies import RULES, decision, screen
@@ -22,14 +23,25 @@ async def submit(state, rid, key, text, identities, source, reporter_mode):
         audit("local", "idempotent_replay")
         await deliver(state.db, state.http, state.settings, cid)
         return Case.model_validate(cached)
+    review = None
     try:
-        screened = screen(text, identities)
+        screened = screen(text, identities, for_extraction=True)
         for d in screened.decisions:
             audit("local", d.action, policy=d.policy, count=d.count)
+        review = extract_local_facts(text, screened)
+        local_decisions = list(screened.decisions)
+        for policy in review.withheld_policies:
+            if RULES[policy] == "BLOCK":
+                raise Stop(422, "restricted_material", policy)
+            action = RULES[policy]
+            audit(
+                "local", action, policy=policy, metadata={"operation": "fact_release"}
+            )
+            local_decisions.append(Decision(policy=policy, action=action, count=None))
         content = await state.brane.complete(
-            agent.report_messages(screened), rid, audit
+            agent.report_messages(review.approved), rid, audit
         )
-        extraction = agent.parse_case(content, screened)
+        extraction, choice = agent.parse_case(content, review.approved)
         audit("model", "schema_and_grounding_validated")
         case = Case(
             case_id=cid,
@@ -38,13 +50,18 @@ async def submit(state, rid, key, text, identities, source, reporter_mode):
             persons=extraction.persons,
             received_at=received,
             decisions=[
-                *screened.decisions,
+                *local_decisions,
                 Decision(policy="P5", action="ALLOW", count=None),
                 decision("P6"),
             ],
         )
         audit("local", "HUMAN_ONLY", policy="P6")
-        state.db.finish(case, rid, extraction.model_dump(), screened.mappings)
+        state.db.finish(
+            case,
+            rid,
+            {**review.private_extraction(extraction), "synthesis": choice.model_dump()},
+            screened.mappings,
+        )
     except Stop as exc:
         audit(
             "local",
@@ -55,7 +72,10 @@ async def submit(state, rid, key, text, identities, source, reporter_mode):
         )
         if exc.policy == "P3" and RULES["P3"] == "LOCAL_ONLY":
             audit("local", "LOCAL_ONLY", policy="P3")
-        state.db.hold(cid, rid, exc.reason)
+        private_detail = (
+            {"local_fact_provenance": review.provenance} if review else None
+        )
+        state.db.hold(cid, rid, exc.reason, private_detail)
         raise
     audit("local", "case_created")
     await deliver(state.db, state.http, state.settings, cid)

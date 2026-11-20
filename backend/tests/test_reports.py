@@ -87,16 +87,12 @@ def test_in_flight_reservation(setup):
 
 
 def test_model_can_prioritize_multiple_grounded_observations(setup, submit):
-    from app.policies import screen
-
     text = "A safety concern was raised alongside harassment."
-    screened = screen(text, [])
-    selected = list(reversed(screened.observations))
     setup[1].answer = json.dumps(
         {
-            **screened.fields,
-            "summary": " ".join(s for _, s in selected),
-            "category": selected[0][0],
+            "category": "harassment",
+            "selected_fact_ids": ["F002", "F001"],
+            "follow_up_question_ids": ["where"],
         }
     )
     assert submit(text).json()["category"] == "harassment"
