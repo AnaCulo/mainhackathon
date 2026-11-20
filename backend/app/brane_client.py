@@ -19,6 +19,12 @@ def policy_digest(document):
     ).hexdigest()
 
 
+# Allowed keys in a streamed delta. OpenRouter sometimes streams the model's internal reasoning
+# ("reasoning", "reasoning_details"; ~1 in 3 live voice turns, 20 Nov). It is discarded: only
+# "content" is ever used, and that is still validated against the allowed questions.
+DELTA_KEYS = {"role", "content", "reasoning", "reasoning_details"}
+
+
 class BraneClient:
     def __init__(self, settings, http: httpx.AsyncClient):
         self.s, self.http = settings, http
@@ -192,10 +198,10 @@ class BraneClient:
                 # OpenRouter sends a trailing usage chunk after the stop chunk (20 Nov live
                 # voice turn). Accept it only if it carries no content and no other finish.
                 if delta.get("content") or choice.get("finish_reason") not in (None, "stop") \
-                        or set(delta) - {"role", "content"}:
+                        or set(delta) - DELTA_KEYS:
                     raise Stop(502, "invalid_gateway_stream")
                 continue
-            if choice.get("index") != 0 or set(delta) - {"role", "content"}:
+            if choice.get("index") != 0 or set(delta) - DELTA_KEYS:
                 raise Stop(502, "invalid_gateway_stream")
             value = delta.get("content") or ""
             total += len(value)

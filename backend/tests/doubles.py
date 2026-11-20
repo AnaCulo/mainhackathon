@@ -91,12 +91,14 @@ class Double:
         if body["stream"]:
             answer = self.answer or data["allowed_questions"][0]
             parts = [(answer[:7], None), (answer[7:], None), ("", "stop")]
+            reasoning = {"reasoning": "internal", "reasoning_details": [{"type": "x"}]} \
+                if self.fault == "reasoning" else {}
             lines = [
                 "data: "
                 + json.dumps(
                     {
                         "choices": [
-                            {"index": 0, "delta": {"content": v}, "finish_reason": f}
+                            {"index": 0, "delta": {"content": v, **reasoning}, "finish_reason": f}
                         ]
                     }
                 )

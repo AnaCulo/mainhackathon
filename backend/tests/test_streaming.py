@@ -144,3 +144,11 @@ def test_elevenlabs_compatibility_fields_accepted(setup):
     assert r.status_code == 200 and "[DONE]" in r.text
     data["surprise"] = 1  # anything else is still rejected
     assert client.post("/v1/chat/completions", json=data, headers=VOICE).status_code == 422
+
+
+def test_reasoning_fields_in_stream_are_discarded(setup):
+    # Observed live (20 Nov): OpenRouter sometimes streams reasoning alongside content.
+    client, double, _ = setup
+    double.fault = "reasoning"
+    r = client.post("/v1/chat/completions", json=body(str(uuid4()), "A warehouse emergency exit was blocked."), headers=VOICE)
+    assert r.status_code == 200 and "internal" not in r.text and "[DONE]" in r.text
