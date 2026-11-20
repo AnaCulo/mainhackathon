@@ -10,7 +10,9 @@ from .security import Stop
 RULES = json.loads(Path(__file__).with_name("policy.json").read_text())
 QUESTIONS = {
     "what": "What happened?",
-    "when": "Approximately when did this happen?",
+    # BRANE's detector tags "Approximately" as PERSON, which makes every preview
+    # unclean (503 preview_not_clean). Keep question wording free of such false positives.
+    "when": "When did this happen, roughly?",
     "where": "Where did this happen? A general setting is enough.",
     "who": "Who was involved? Roles are enough.",
     "evidence": "What evidence, if any, is available?",
