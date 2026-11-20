@@ -1,5 +1,9 @@
 # Evidence status
 
+**STATUS: PENDING LIVE RUN on synthetic-intake-5**
+
+The hosted BRANE key and reviewed policy fingerprint were unavailable for this build. The backend columns in both hand-in CSVs retain their historical observations. Local integration tests use simulated BRANE and webhook responses. A new live run must verify the E6 result, outbound content, completion headers, held-register delivery and human review link before replacing the historical evidence.
+
 The inherited evidence set is catalogued under the historical synthetic-intake-3 baseline. Direct gateway runs bypassed FastAPI. Individual records identify the executed path. Where the file lacks a policy version, the catalogue label does not establish which code ran.
 
 | Evidence file | Recorded path and version | Current for synthetic-intake-5? |
