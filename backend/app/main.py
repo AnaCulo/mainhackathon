@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from .brane_client import BraneClient
 from .config import Settings
 from .database import Database
+from .locality import LocalGuard
 from .request_limit import RequestLimit
 from .routes import chat, reports, ui
 from .security import Stop
@@ -36,7 +37,10 @@ def create_app(settings=None, transport=None):
             app.state.brane = BraneClient(s, client, app.state)
             yield
 
-    app = FastAPI(title="Synthetic whistleblower intake", lifespan=lifespan)
+    # No /docs, /redoc or /openapi.json: they would list the loopback-only /ui routes through a
+    # tunnel and pull Swagger from a CDN.
+    app = FastAPI(title="Synthetic whistleblower intake", lifespan=lifespan,
+                  docs_url=None, redoc_url=None, openapi_url=None)
 
     app.add_middleware(RequestLimit)
 
@@ -47,6 +51,9 @@ def create_app(settings=None, transport=None):
         response.headers["X-Request-ID"] = request.state.rid
         response.headers["Cache-Control"] = "no-store"
         return response
+
+    # Added last, so it is outermost: runs before the size limit, routing and body parsing.
+    app.add_middleware(LocalGuard)
 
     @app.exception_handler(Stop)
     async def stopped(request, exc):
