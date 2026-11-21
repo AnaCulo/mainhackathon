@@ -1,5 +1,7 @@
 # Group Čulo whistleblower intake demo
 
+**New here? Follow [START_HERE.md](START_HERE.md):** install, run and try it in about 10 minutes on macOS, Linux or Windows.
+
 Submit a synthetic report and follow its case link to the human review form. The Python backend screens the account locally. BRANE governs the model request. A published n8n workflow registers the protected brief, tracks deadlines and leaves the decision with a human handler.
 
 ## Run the presenter

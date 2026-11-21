@@ -119,12 +119,23 @@ def run():
         parser.error("The legacy test harnesses use fixed ports. Use --isolated for presenter runs.")
 
     node = shutil.which("node")
-    if not node or not subprocess.check_output([node, "--version"], text=True, encoding="utf-8").startswith("v24."):
-        raise SystemExit("Use Node 24 for this demo.")
+    found = subprocess.check_output([node, "--version"], text=True, encoding="utf-8").strip() if node else "none"
+    if not found.startswith("v24."):
+        raise SystemExit(
+            f"This demo needs Node 24 (found: {found}). Install it, then open a new terminal:\n"
+            "  macOS:   brew install node@24 && brew link --overwrite --force node@24\n"
+            "  Windows: winget install OpenJS.NodeJS.LTS   (check that node --version shows v24)\n"
+            "  Linux:   https://nodejs.org/en/download (choose 24 LTS)")
     if not args.offline:
-        import uvicorn  # noqa: F401 -- fail before provisioning if dependencies are missing
-        from cryptography.fernet import Fernet
-        from dotenv import dotenv_values
+        try:
+            import uvicorn  # noqa: F401 -- fail before provisioning if dependencies are missing
+            from cryptography.fernet import Fernet
+            from dotenv import dotenv_values
+        except ModuleNotFoundError as exc:
+            raise SystemExit(
+                f"Python package missing ({exc.name}) for {sys.executable}. From the project folder run:\n"
+                f'  "{sys.executable}" -m pip install -r backend/requirements.txt\n'
+                "If you installed into a virtual environment, set PYTHON to its python before running the launcher.")
         if os.environ.get("STT_WARMUP") != "0":
             speech_ready()
 
