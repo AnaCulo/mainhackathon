@@ -378,6 +378,7 @@ details.json pre { margin: 0; border-top: 1px solid var(--line); padding: 10px 1
 .rt-meta { display: flex; flex-wrap: wrap; gap: 6px; }
 footer.foot { max-width: 1480px; margin: 0 auto; padding: 0 28px 28px; color: var(--muted); font-size: 13px; }
 @media (max-width: 1000px) { footer.foot { padding: 0 14px 22px; } }
+.hint.hint-warn { color: var(--held); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -1446,7 +1447,14 @@ function stopTalk() {
     } else if (r.ok) {
       done("Didn't catch that: hold and try again");
     } else {
-      const msg = { stt_unavailable: "Speech-to-text isn't installed here: please type", stt_busy: "Still transcribing: try again in a moment",
+      // Setup problems get a short button label plus the fix in the hint under the button.
+      const setup = {
+        stt_not_installed: "Speech-to-text isn't installed on this computer. Type your report, or have the presenter run python -m pip install -r backend/requirements.txt and restart the demo.",
+        stt_runtime_missing: "Speech-to-text is installed but couldn't start. On Windows, install the Microsoft Visual C++ Redistributable (x64) and restart the demo. Type your report for now.",
+        stt_model_unavailable: "The local speech model couldn't be loaded. Its first use downloads about 480 MB, so check the internet connection and try again, or type your report.",
+        stt_unavailable: "Speech-to-text isn't available on this computer. Type your report instead." }[r.error];
+      if (setup) { $("talkHint").textContent = setup; $("talkHint").classList.add("hint-warn"); done("Speech-to-text unavailable: please type"); return; }
+      const msg = { stt_busy: "Still transcribing: try again in a moment",
         audio_too_long: "Too long: keep it under a minute", audio_unreadable: "Couldn't read the audio: try again",
         network: "Backend not reachable: try again", timeout: "Transcription timed out: try again" }[r.error] || "Transcription failed: try again";
       done(msg);

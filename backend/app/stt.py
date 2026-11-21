@@ -35,6 +35,15 @@ def _load():
     return _model
 
 
+def unavailable_reason(exc: BaseException) -> str:
+    """Map a load failure to a reason the page can explain. Never includes audio or text."""
+    if isinstance(exc, ModuleNotFoundError):
+        return "stt_not_installed"        # faster-whisper or a dependency was never installed
+    if isinstance(exc, ImportError):
+        return "stt_runtime_missing"      # installed, but a native library failed to load (Windows: DLL)
+    return "stt_model_unavailable"        # the model could not be downloaded or opened
+
+
 def warm_up():
     """Load the model in the background so the first spoken message is not slow."""
     if "PYTEST_CURRENT_TEST" in os.environ or os.environ.get("STT_WARMUP") == "0":

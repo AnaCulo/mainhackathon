@@ -444,3 +444,28 @@ def test_submit_anyway_is_strict_bool(local):
     sid = client.get("/ui/new-session").json()["session_id"]
     r = client.post("/ui/submit", json={"session_id": sid, "anyway": "yes"})
     assert r.status_code == 422
+
+
+@pytest.mark.parametrize("exc,reason", [
+    (ModuleNotFoundError("No module named 'faster_whisper'"), "stt_not_installed"),
+    (ImportError("DLL load failed while importing _ext"), "stt_runtime_missing"),
+    (OSError("model download failed"), "stt_model_unavailable"),
+])
+def test_stt_unavailable_says_why(local, monkeypatch, exc, reason):
+    # A teammate's Windows laptop showed only "not installed"; the page now says which fix applies.
+    from app import stt
+
+    def fail():
+        raise exc
+
+    monkeypatch.setattr(stt, "_load", fail)
+    client, _ = local
+    r = client.post("/ui/stt", content=b"RIFF\0\0\0\0WAVE" + b"\0" * 64, headers=WAV)
+    assert r.status_code == 503 and r.json() == {"error": reason}
+
+
+def test_speech_to_text_is_in_the_default_install():
+    from pathlib import Path
+
+    req = (Path(__file__).resolve().parents[1] / "requirements.txt").read_text(encoding="utf-8")
+    assert "faster-whisper==" in req and "av==" in req

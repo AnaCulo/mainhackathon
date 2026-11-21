@@ -73,6 +73,38 @@ def wait_for(process, port, path, expected=200):
     raise SystemExit(f"Service on port {port} did not become ready.")
 
 
+def speech_ready():
+    """Check local speech-to-text before the demo starts, so Talk mode never fails on first use.
+
+    Typing works either way; this only prints what to fix. The model is fetched once from
+    Hugging Face and cached, exactly as the backend would on its first transcription.
+    """
+    fix = f'"{sys.executable}" -m pip install -r backend/requirements.txt'
+    try:
+        import faster_whisper  # noqa: F401
+        import ctranslate2  # noqa: F401
+    except ModuleNotFoundError:
+        print(f"Speech-to-text is not installed, so Talk mode will ask people to type. To enable it run: {fix}", flush=True)
+        return False
+    except ImportError as exc:
+        hint = (" Install the Microsoft Visual C++ Redistributable (x64) and run the launcher again."
+                if os.name == "nt" else "")
+        print(f"Speech-to-text is installed but a native library failed to load ({exc}).{hint}", flush=True)
+        return False
+    model = os.environ.get("STT_MODEL", "small.en")
+    try:
+        from faster_whisper.utils import download_model
+
+        print(f"Preparing the local speech model {model} (one-time download, about 480 MB)...", flush=True)
+        download_model(model)
+    except Exception as exc:
+        print(f"The speech model could not be downloaded ({type(exc).__name__}). Talk mode will retry on first use;"
+              " check the internet connection.", flush=True)
+        return False
+    print("Speech-to-text ready (runs on this machine only).", flush=True)
+    return True
+
+
 def run():
     parser = argparse.ArgumentParser(description=__doc__)
     for flag in ("hold", "offline", "trace", "python", "voice", "isolated"):
@@ -93,6 +125,8 @@ def run():
         import uvicorn  # noqa: F401 -- fail before provisioning if dependencies are missing
         from cryptography.fernet import Fernet
         from dotenv import dotenv_values
+        if os.environ.get("STT_WARMUP") != "0":
+            speech_ready()
 
     n8n_port, register_port, intake_port, broker_port = 5689, 8788, 8000, 5679
     if args.isolated:

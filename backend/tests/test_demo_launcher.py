@@ -15,7 +15,7 @@ def test_default_launcher_fails_closed_at_the_presenter_form(tmp_path):
     root = Path(__file__).resolve().parents[2]
     private = tmp_path / "empty-settings"
     private.touch()
-    env = {**os.environ, "DEMO_BACKEND_ENV": str(private), "BRANE_API_KEY": "",
+    env = {**os.environ, "DEMO_BACKEND_ENV": str(private), "BRANE_API_KEY": "", "STT_WARMUP": "0",
            "BRANE_POLICY_SHA256": "", "PYTHON": sys.executable}
     if os.name == "nt":
         launcher = [shutil.which("pwsh") or "powershell.exe", "-NoProfile", "-File",

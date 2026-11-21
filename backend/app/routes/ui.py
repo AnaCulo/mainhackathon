@@ -338,8 +338,11 @@ async def speech_to_text(request: Request):
 
         await run_in_threadpool(_load)  # missing package or model download failure
     except Exception as exc:
-        log.warning("stt_unavailable %s", type(exc).__name__)
-        return _stt_error(503, "stt_unavailable")
+        from ..stt import unavailable_reason
+
+        reason = unavailable_reason(exc)
+        log.warning("%s %s: %s", reason, type(exc).__name__, str(exc)[:200])
+        return _stt_error(503, reason)
     slots = getattr(request.app.state, "stt_slots", None)
     if slots is None:
         slots = request.app.state.stt_slots = asyncio.Semaphore(STT_SLOTS)

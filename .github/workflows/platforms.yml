@@ -32,10 +32,19 @@ jobs:
           node-version: "24"
 
       - name: Install backend and voice dependencies
-        run: python -m pip install -r backend/requirements.txt -r backend/requirements-voice.txt
+        # The documented install: speech-to-text is part of requirements.txt, binary wheels only.
+        run: python -m pip install --only-binary=:all: -r backend/requirements.txt
 
       - name: Voice decoding imports
         run: python -c "import av, faster_whisper; from faster_whisper.audio import decode_audio; print('voice ok', av.__version__)"
+
+      - name: Speech-to-text works end to end (launcher preflight, model download, real transcription)
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: >-
+          python -c "import importlib.util as u; s=u.spec_from_file_location('demo','../n8n/demo.py'); m=u.module_from_spec(s); s.loader.exec_module(m); assert m.speech_ready();
+          from app.stt import transcribe; t=transcribe(open('app/static/voice/what.mp3','rb').read())['text']; print('heard:', t); assert 'happen' in t.lower()"
 
       - name: Install n8n for the launcher test
         shell: bash

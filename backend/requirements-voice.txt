@@ -1,2 +1,2 @@
-faster-whisper==1.2.1
-av==16.0.1
+# Speech-to-text is now part of requirements.txt; this file stays for older instructions.
+-r requirements.txt

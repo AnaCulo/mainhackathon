@@ -18,11 +18,10 @@ Backend only, without n8n (cases stay "pending delivery"):
 cd backend && .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Push-to-talk needs the local speech-to-text extras, installed once:
-
-```bash
-backend/.venv/bin/pip install -r backend/requirements-voice.txt
-```
+Push-to-talk uses local speech-to-text, which `backend/requirements.txt` installs. The launcher checks it at start and prints the fix if something is missing. If Talk mode says speech-to-text cannot start, the hint under the button names the cause:
+- **not installed:** run `python -m pip install -r backend/requirements.txt`
+- **could not start (Windows):** install the Microsoft Visual C++ Redistributable (x64)
+- **model unavailable:** the first use needs internet to download the model
 
 The first time, the backend downloads the Whisper `small.en` model, about 480 MB, into `~/.cache/huggingface`. After that it runs offline. The model is preloaded in the background when the page opens. For speed over accuracy, set `STT_MODEL=base.en`.
 
