@@ -3,7 +3,7 @@
 **Entry title** — A confidential reporting channel with human follow-up  
 **Track** — AI-Z Secure Enterprise AI Challenge  
 **Team** — Group Čulo  
-**Status** — Friday rough package prepared. BuilderBase upload and confirmation pending.
+**Status** — Final package rebuilt on 21 Nov from the tested code. BuilderBase upload and confirmation pending.
 
 ## Submission text
 
@@ -17,7 +17,7 @@ The team’s open-policy baseline exposed failures on protected details, repeate
 - five mentions of one person become one token
 - an ordinary purchasing breach reaches the cloud as PERSON_01, while a forgery allegation stays local
 
-On the current build, a local hold returns 202. Automation failures retain 5xx. Both register content-free held receipts. Current live evidence for this build is listed in [Evidence status](EVIDENCE_STATUS.md), including the failures we disclose. Older files record earlier builds. A closed voice harness ran the same path live through the voice bridge contract, and an end-to-end ElevenLabs call with generated caller audio passed through ElevenLabs speech recognition, our backend and live BRANE, then filed a case for the handler. ElevenLabs refuses Custom LLM with zero retention, so the published agent keeps transcripts for at most one day. That is why live caller audio stays blocked: the call used generated audio only, and the retention is a product gap that blocks live use ([legal summary](../docs/legal-summary.md)). Final team review and the manual timing comparison are pending.
+On the current build, a local hold returns 202. Automation failures retain 5xx. Both register content-free held receipts. Current live evidence for this build is listed in [Evidence status](EVIDENCE_STATUS.md), including the failures we disclose. Older files record earlier builds. A closed voice harness ran the same path live through the voice bridge contract, and an end-to-end ElevenLabs call with generated caller audio passed through ElevenLabs speech recognition, our backend and live BRANE, then filed a case for the handler. ElevenLabs refuses Custom LLM with zero retention, so the published agent keeps transcripts for at most one day. That is why live caller audio stays blocked: the call used generated audio only, and the retention is a product gap that blocks live use ([legal summary](../docs/legal-summary.md)). On 21 Nov the package passed the Windows and Linux CI check (backend tests, handler tests and the real launcher), and a simulated judge test with fresh inputs found no protected value leaving the machine ([judge test report](../docs/judge-test-report.md)). Final team review and the manual timing comparison are pending.
 
 ## Assets to attach
 
@@ -34,13 +34,20 @@ On the current build, a local hold returns 202. Automation failures retain 5xx. 
 
 The working-agent archive includes the presenter launchers and their source. Supply the reviewed archive with the hand-in. If the platform requires a hosted source or video link, D must publish the reviewed assets under the team’s authorised project and check access from the jury’s perspective. The hand-in CSVs are under submission/. The blank starter files in docs/reference/ are unsuitable for upload.
 
-## Remaining handoffs · Europe/Amsterdam
+## Remaining handoffs · Europe/Amsterdam, 21 Nov
 
-- **Friday 20 Nov, 18:00 integration target.** Local published-workflow test completed ahead of target. B and C must verify the real deployed gateway, no-bypass path and failed-check evidence. A must verify the data destinations and the legal treatment of held reports.
-- **Friday night.** D opens the team’s authenticated BuilderBase project and uploads this rough package. Save the confirmation ID or receipt and the CET time. No receipt has been observed.
-- **Saturday 21 Nov, 08:00–09:30.** C runs the configured mandatory and edge fixtures. T5 is the brief’s check-failure test; the health case is row T2b. A reviews P3a/P3b and signs the matrix. B confirms the deployed agent reference, durable receipt and public demonstration route. D incorporates the observed manual timing, checks hand-in copies, and records the team’s final live cut if available. D’s local MP4 is ready as the rough cut.
-- **Before Saturday 21 Nov, 10:30 CET.** D replaces the rough assets in the correct team entry, verifies the submitted files and runtime, and records BuilderBase’s confirmation and timestamp.
-- **Saturday 21 Nov, 11:00 CET.** All four teammates attend Sint Janskerk check-in.
+Done:
+- Live evidence on the submitted code: all fixtures through the backend, the check-failure case and the direct BRANE gate ([Evidence status](EVIDENCE_STATUS.md)).
+- Security tests numbered as in the brief. T5 is check failure, and the health case is row T2b.
+- Windows and Linux CI check passing, including `n8n\demo.ps1`.
+- Simulated judge test, with its fixes and regression tests.
+
+Still to do:
+- **A** reviews P3a/P3b and signs the policy matrix and test CSV.
+- **D** records the manual timing for `tests/manual_benchmark.py` and re-records the demo video on the current website with live BRANE.
+- **A teammate on Windows** runs one typed and one spoken report with the live key.
+- **Before 10:30 CET.** D uploads `working-agent.zip` and the assets above to the team's BuilderBase entry, checks them from the jury's view, and records the confirmation ID and time.
+- **11:00 CET.** All four teammates attend Sint Janskerk check-in.
 
 Rough receipt: pending. Final receipt: pending. No authenticated team submission URL or signed-in BuilderBase project was supplied. Never paste service credentials into the submission.
 
