@@ -2,6 +2,8 @@
 
 import os
 import stat
+
+import pytest
 from types import SimpleNamespace
 
 from cryptography.fernet import Fernet
@@ -43,9 +45,8 @@ def test_transcription_runs_without_fchmod(monkeypatch):
     assert calls == [stat.S_IREAD | stat.S_IWRITE]
 
 
+@pytest.mark.skipif(os.name == "nt", reason="Windows has no POSIX mode bits; the profile ACL applies")
 def test_posix_still_restricts_to_owner(tmp_path):
-    if not hasattr(os, "fchmod"):
-        return
     path = tmp_path / "cases.db"
     path.touch(mode=0o644)
     Database(path, Fernet.generate_key().decode())

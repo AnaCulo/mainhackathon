@@ -16,12 +16,12 @@ class Stop(Exception):
 def owner_only(fd: int, path) -> None:
     """Restrict a just-opened file to its owner (0600).
 
-    POSIX tightens the open descriptor. Windows has no os.fchmod and no POSIX
-    mode bits: os.chmod only toggles read-only there, and access is governed by
-    the ACL inherited from the user's profile folder, which already excludes
-    other standard users.
+    POSIX tightens the open descriptor. Windows has no POSIX mode bits: os.chmod
+    (and the os.fchmod Python 3.13 added there) only toggles read-only, and access
+    is governed by the ACL inherited from the user's profile folder, which already
+    excludes other standard users.
     """
-    if hasattr(os, "fchmod"):
+    if os.name != "nt" and hasattr(os, "fchmod"):
         os.fchmod(fd, 0o600)
     else:
         os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
