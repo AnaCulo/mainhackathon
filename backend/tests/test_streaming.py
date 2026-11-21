@@ -155,3 +155,18 @@ def test_reasoning_fields_in_stream_are_discarded(setup):
     double.fault = "reasoning"
     r = client.post("/v1/chat/completions", json=body(str(uuid4()), "A warehouse emergency exit was blocked."), headers=VOICE)
     assert r.status_code == 200 and "internal" not in r.text and "[DONE]" in r.text
+
+
+def test_who_question_travels_as_participants(setup):
+    # BRANE's PERSON detector flags the ID "who" in every preview (live, 21 Nov).
+    client, double, _db = setup
+    double.answer = "participants"
+    text = ("Last week two emergency exits in the warehouse were blocked by pallets "
+            "for three days. I took three photographs.")
+    r = client.post("/v1/chat/completions", json=body(uuid4(), text), headers=VOICE)
+    assert r.status_code == 200, r.text
+    chunks = [json.loads(p[6:]) for p in r.text.strip().split("\n\n") if p != "data: [DONE]"]
+    said = "".join(c["choices"][0]["delta"].get("content") or "" for c in chunks)
+    assert said == "Who was involved? Roles are enough."
+    wire = json.dumps([b for url, b, _ in double.gateway_requests if b])
+    assert "participants" in wire and '\\"who\\"' not in wire and '"who"' not in wire

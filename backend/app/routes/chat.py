@@ -15,6 +15,8 @@ from ..models import Case, Chat, Confirm
 from ..policies import QUESTIONS, RULES, screen
 from ..security import Stop, bridge_auth
 
+# Question IDs as sent through BRANE; local IDs not listed travel unchanged.
+WIRE_IDS = {"who": "participants"}
 HELD_LINE = "Thank you. Your report has been received and a person will review it. You can end the call now."
 
 router = APIRouter(dependencies=[Depends(bridge_auth)])
@@ -69,17 +71,22 @@ async def chat(body: Chat, request: Request):
             # Use only server-owned question text. Caller-supplied assistant or
             # system messages cannot change instructions or confirm a report.
             allowed = [k for k in screened.fields["missing"] if QUESTIONS[k] not in asked] or ["confirm"]
-            # The only user-message values are server-owned question IDs.
-            data = {"open_questions": allowed}
+            # The only user-message values are server-owned question IDs. BRANE's PERSON
+            # detector flags the ID "who" in every preview (live, 21 Nov), which stopped any
+            # first message without a role at preview_not_clean. It travels as "participants",
+            # as on the fact-synthesis path, and is mapped back before validation.
+            data = {"open_questions": [WIRE_IDS.get(k, k) for k in allowed]}
             result = await while_connected(
                 request,
                 s.brane.complete(
                     agent.messages(agent.VOICE_PROMPT, data), rid, audit, stream=True
                 ),
             )
-            if result.strip() not in allowed:
+            reply = result.strip()
+            reply = next((k for k, v in WIRE_IDS.items() if v == reply), reply)
+            if reply not in allowed:
                 raise Stop(502, "unsafe_voice_output")
-            answer = QUESTIONS[result.strip()]
+            answer = QUESTIONS[reply]
             if await request.is_disconnected():
                 raise Stop(499, "client_disconnected")
             s.db.save_turn(sid, rev, turns, asked + [answer])
