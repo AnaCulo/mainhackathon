@@ -201,7 +201,8 @@ def _name_runs(text):
         while words and (words[0].casefold() in _SAFE_CAPS or _TOKEN.fullmatch(words[0])):
             start = text.index(words[1], start + len(words[0])) if len(words) > 1 else m.end()
             words = words[1:]
-        while words and words[-1].casefold() in _SAFE_CAPS:
+        # "Later PERSON_01 told": a token ends the run, so "Later" is not a name.
+        while words and (words[-1].casefold() in _SAFE_CAPS or _TOKEN.fullmatch(words[-1])):
             words = words[:-1]
         if not words:
             continue
@@ -400,6 +401,11 @@ def to_narrative(text):
     )
     # "Hanneke, as everyone calls her," adds nothing once the name is a role.
     text = re.sub(rf"(?<=_\d\d){_NICKNAME},?", "", text, flags=re.IGNORECASE)
+    # "Everyone calls him PERSON_01." only links a nickname, which is already bound locally.
+    text = re.sub(
+        r"(?i)(?:^|(?<=[.!?]\s))(?:everyone|everybody|people|we|they)\s+calls?\s+(?:him|her|them)\s+"
+        r"(?:PERSON|REPORTER)_\d{2,}\s*[.!]\s*", "", text,
+    )
     # "a foreman named PERSON_01" -> "a foreman PERSON_01", then role only.
     text = re.sub(
         r"\b(?:named|called|known as|goes by)\s+(?=PERSON_\d{2,})", "", text, flags=re.IGNORECASE

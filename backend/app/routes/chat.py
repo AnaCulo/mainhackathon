@@ -8,7 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 
-from .. import agent
+from .. import agent, narrative
 from ..audit import record
 from ..case_service import report_response, submit
 from ..models import Case, Chat, Confirm
@@ -70,7 +70,12 @@ async def chat(body: Chat, request: Request):
                 audit("local", d.action, policy=d.policy, count=d.count)
             # Use only server-owned question text. Caller-supplied assistant or
             # system messages cannot change instructions or confirm a report.
-            allowed = [k for k in screened.fields["missing"] if QUESTIONS[k] not in asked] or ["confirm"]
+            missing = screened.fields["missing"]
+            # The opening line already asked "What happened?". A report the model may summarise
+            # from a protected copy has answered it, even when the fixed grammar finds no topic.
+            if "what" in missing and s.settings.narrative and narrative.eligible("\n".join(turns)):
+                missing = [k for k in missing if k != "what"]
+            allowed = [k for k in missing if QUESTIONS[k] not in asked] or ["confirm"]
             # The only user-message values are server-owned question IDs. BRANE's PERSON
             # detector flags the ID "who" in every preview (live, 21 Nov), which stopped any
             # first message without a role at preview_not_clean. It travels as "participants",

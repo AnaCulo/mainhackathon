@@ -25,6 +25,10 @@ SPELLED = re.compile(r"\b[a-z](?:[^\w\s]+[a-z]){2,}\b")
 IDENTIFIERS = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b|\+?\d[\d\s().-]{7,}\d|\b[A-Z]{2,5}-\d{3,}\b")
 
 UNKNOWN = "unknown"
+# Capitalised words that are also first names; never treated as a person's alias.
+COMMON_WORDS = frozenset(
+    "may june april august will mark bill grace hope rose faith joy art dawn summer jack frank "
+    "victor sunny rich page miles ray lane".split())
 
 
 # Fail at startup if a new action needs implementation.
@@ -209,6 +213,17 @@ def screen(text: str, identities: list[Identity], *, allow_incomplete=False, aud
             if short in surnames and surnames[short][0] != token:
                 raise Stop(422, "ambiguous_identity", "P2")
             surnames[short] = (token, name, kind)
+    # "Sven Proef-Naam ... everyone calls him Sven": a bare first name is the same person.
+    # A first name two people share, or one that is an ordinary word, is left alone.
+    firsts = {}
+    for token, name, kind in list(bindings.values()):
+        words = name.split()
+        first = words[0] if len(words) >= 2 else None
+        if (not first or len(first) < 3 or not first[0].isupper() or first in surnames
+                or first.casefold() in COMMON_WORDS):
+            continue
+        firsts[first] = None if first in firsts and firsts[first][0] != token else (token, name, kind)
+    surnames.update({f: b for f, b in firsts.items() if b})
     short_aliases = {}
     for short, binding in surnames.items():
         # Exclude lower-case email addresses and hyphenated continuations.

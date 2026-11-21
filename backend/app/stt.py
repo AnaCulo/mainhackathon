@@ -57,7 +57,9 @@ def transcribe(audio: bytes) -> dict:
         segments, info = model.transcribe(
             path, language="en", beam_size=5, hotwords=HOTWORDS,
             vad_filter=True, condition_on_previous_text=False)
-        text = " ".join(s.text.strip() for s in segments).strip()
+        text = " ".join(s.text.strip() for s in segments)
+        # Whisper can end on a partial multi-byte token, which decodes to U+FFFD ("�").
+        text = " ".join(text.replace("\ufffd", " ").split())
     finally:
         os.remove(path)
     return {

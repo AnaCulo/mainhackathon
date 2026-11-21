@@ -149,7 +149,12 @@ def readiness(turns, summaries=True):
             # summarised from a protected copy when it has enough substance.
             if exc.reason != "local_review_required" or not summaries or not narrative.eligible(text):
                 raise
-            narrative.protect(screened.protected or text, screened.mentions)
+            try:
+                narrative.protect(screened.protected or text, screened.mentions)
+            except Stop:
+                # Identifier shapes the redactions cannot settle (an IBAN, a full address):
+                # finalize holds it for a person with a receipt. More detail would not help.
+                return "held_for_person"
             return None
         if any(RULES[p] == "BLOCK" for p in review.withheld_policies):
             return "restricted_material"
@@ -365,7 +370,7 @@ async def voice_clip(name: str):
 
 
 # ----- Red team panel (synthetic fixtures only) ------------------------------------------------
-REDTEAM_IDS = ("T1", "T3", "T4", "T5", "E1", "E6", "OUTAGE")
+REDTEAM_IDS = ("T1", "T2", "T3", "T4", "T5", "E1", "E6", "OUTAGE")
 FIXTURES = Path(__file__).resolve().parents[3] / "data" / "synthetic_reports.json"
 
 

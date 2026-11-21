@@ -1517,10 +1517,14 @@ window.addEventListener("online", checkHealth);
 
 // ----- Red team panel (synthetic fixtures; textContent only) ------------------------------
 const RT_LABELS = {
-  T1: ["Clean fraud report", "ok"], T3: ["Name repeated 5×", "protect"], T4: ["Injection in evidence (P4)", "stop"],
+  T1: ["Clean fraud report", "ok"], T2: ["Reporter identifiers (P1/P2)", "held"], T3: ["Name repeated 5×", "protect"], T4: ["Injection in evidence (P4)", "stop"],
   T5: ["Health disclosure (P3)", "held"], E1: ["Identifiable by role (P1)", "held"], E6: ["Offence with relative (P3)", "held"],
-  OUTAGE: ["BRANE down (kill switch)", "stop"],
+  OUTAGE: ["Check failure: BRANE down (kill switch)", "stop"],
 };
+// Labels follow the brief's five security tests: T5 is check failure, the health case is T2b.
+// Fixture IDs in the data and evidence files stay T5 (health) and OUTAGE.
+const RT_SHOWN = { T5: "T2b", OUTAGE: "T5" };
+const shownId = id => RT_SHOWN[id] || id;
 const redteam = { busy: false };
 function markedOriginal(sample) {
   const pre = el("pre", { tabindex: "0" });
@@ -1548,7 +1552,7 @@ async function loadFixtures() {
   box.replaceChildren(...cases.map((sample) => {
     const [what, k] = RT_LABELS[sample.id] || ["Synthetic fixture", "ok"];
     const b = el("button", { type: "button", class: "rt-btn k-" + k, "aria-pressed": "false" },
-      el("span", { class: "rt-id" }, sample.id === "OUTAGE" ? "OUTAGE" : sample.id), el("span", { class: "rt-what" }, what));
+      el("span", { class: "rt-id" }, shownId(sample.id)), el("span", { class: "rt-what" }, what));
     b.addEventListener("click", () => runFixture(sample, b));
     return b;
   }));
@@ -1559,19 +1563,19 @@ async function runFixture(sample, button) {
   const buttons = [...$("fixtures").querySelectorAll("button")];
   buttons.forEach((b) => { b.disabled = true; b.setAttribute("aria-pressed", String(b === button)); });
   const [what] = RT_LABELS[sample.id] || ["Synthetic fixture"];
-  $("redResult").replaceChildren(el("div", { class: "pending-note" }, el("span", { class: "spinner", "aria-hidden": "true" }), `Running ${sample.id} (${what}) through the intake path…`));
-  $("redStatus").textContent = "Running " + sample.id + ".";
+  $("redResult").replaceChildren(el("div", { class: "pending-note" }, el("span", { class: "spinner", "aria-hidden": "true" }), `Running ${shownId(sample.id)} (${what}) through the intake path…`));
+  $("redStatus").textContent = "Running " + shownId(sample.id) + ".";
   try {
     const r = await api("/ui/redteam/run", { body: { id: sample.id }, timeout: SUBMIT_TIMEOUT, track: false });
     const d = r.data || {};
     if (!r.data || !Array.isArray(d.trace)) {
       const [title, why] = reason(r.error || d.error, r.http);
       $("redResult").replaceChildren(el("div", { class: "msg notice-msg stop" }, el("b", {}, "Fixture could not run: " + title), why));
-      $("redStatus").textContent = "Fixture " + sample.id + " could not run.";
+      $("redStatus").textContent = "Fixture " + shownId(sample.id) + " could not run.";
       return;
     }
     renderRedteam(sample, d);
-    $("redStatus").textContent = `Fixture ${sample.id} finished: HTTP ${d.status}, ${d.completion_attempts || 0} model call(s).`;
+    $("redStatus").textContent = `Fixture ${shownId(sample.id)} finished: HTTP ${d.status}, ${d.completion_attempts || 0} model call(s).`;
   } finally {
     redteam.busy = false;
     buttons.forEach((b) => { b.disabled = false; });
@@ -1585,7 +1589,7 @@ function renderRedteam(sample, d) {
   const kind = held ? (c.policy === "P4" || c.hold_reason === "instruction_quarantined" || sample.id === "OUTAGE" ? "stop" : "held") : "ok";
   const chip = el("span", { class: "chip " + kind }, el("span", { class: "pip", "aria-hidden": "true" }),
     held ? (c.status === "held_unverified" ? "Held · gateway unverifiable" : "Held for review" + (c.policy ? " · " + c.policy : "")) : "Case drafted");
-  const head = el("div", { class: "rt-head" }, el("b", {}, `${sample.id} · ${(RT_LABELS[sample.id] || ["Synthetic fixture"])[0]}`), chip,
+  const head = el("div", { class: "rt-head" }, el("b", {}, `${shownId(sample.id)} · ${(RT_LABELS[sample.id] || ["Synthetic fixture"])[0]}`), chip,
     el("span", { class: "chip" }, `HTTP ${Number(d.status) || "?"}`), el("span", { class: "chip" }, `${fmt(d.ms || 0)} ms`),
     el("span", { class: "chip " + (d.completion_attempts ? "ok" : "") }, `${Number(d.completion_attempts) || 0} model call(s)`));
   const wrote = el("div", { class: "rt-col wrote" }, el("h3", {}, icon(ICONS.lock, 14), "What the reporter wrote (synthetic fixture)"), markedOriginal(sample),

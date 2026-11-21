@@ -11,13 +11,13 @@ from .test_ui import local
 
 
 @pytest.mark.parametrize("key,status,policy", [
-    ("T1",200,None), ("T3",200,None), ("T4",202,"P4"), ("T5",202,"P3"),
+    ("T1",200,None), ("T2",202,"P3"), ("T3",200,None), ("T4",202,"P4"), ("T5",202,"P3"),
     ("E1",202,"P1"), ("E6",202,"P3"), ("OUTAGE",503,"P5"),
 ])
 def test_fixture_through_reports(local, key, status, policy):
     client, double = local
     fixtures = client.get("/ui/redteam/cases").json()["cases"]
-    assert [x["id"] for x in fixtures] == ["T1","T3","T4","T5","E1","E6","OUTAGE"]
+    assert [x["id"] for x in fixtures] == ["T1","T2","T3","T4","T5","E1","E6","OUTAGE"]
     r = client.post("/ui/redteam/run", json={"id":key}).json()
     assert r["status"] == status and r["delivery"] == "delivered"
     assert r["request_id"] and r["handler_url"].endswith(r["case"]["case_id"])
