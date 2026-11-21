@@ -19,7 +19,7 @@ Open a terminal in the unzipped folder (the one containing this file):
 ```bash
 python3.13 -m venv .venv
 .venv/bin/python -m pip install -r backend/requirements.txt
-cp backend/.env.example backend/.env      # then put the team key after BRANE_API_KEY=
+cp backend/.env.example backend/.env      # then, in that file, set BRANE_API_KEY to the team key
 PYTHON=.venv/bin/python ./n8n/demo.sh --hold
 ```
 
@@ -30,7 +30,7 @@ Open PowerShell in the unzipped folder:
 ```powershell
 py -3.13 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
-Copy-Item backend\.env.example backend\.env   # then put the team key after BRANE_API_KEY=
+Copy-Item backend\.env.example backend\.env   # then, in that file, set BRANE_API_KEY to the team key
 $env:PYTHON = (Resolve-Path .venv\Scripts\python.exe)
 powershell -ExecutionPolicy Bypass -File n8n\demo.ps1 -Hold
 ```
@@ -63,7 +63,7 @@ About 290 tests run offline in a few seconds, with BRANE simulated. They cover p
 | `This demo needs Node 24` | Install Node 24 as the message says, then open a new terminal |
 | `Python package missing (...)` | Run the `pip install` line it prints. If you used a virtual environment, set `PYTHON` to its python |
 | `Demo port 8000 is already in use` | Stop the other program or demo, or add `--isolated` (`-Isolated` on Windows) to use free ports |
-| `BRANE is not configured on this machine` | Put the team key after `BRANE_API_KEY=` in `backend/.env`. Keep `BRANE_POLICY_SHA256` as given |
+| `BRANE is not configured on this machine` | In `backend/.env`, set `BRANE_API_KEY` to the team key. Keep `BRANE_POLICY_SHA256` as given |
 | Page says "Speech-to-text unavailable" | The hint under the Talk button names the fix. On Windows this may be the [Microsoft Visual C++ Redistributable (x64)](https://aka.ms/vs/17/release/vc_redist.x64.exe). Typing always works |
 | `running scripts is disabled on this system` (Windows) | Use the `powershell -ExecutionPolicy Bypass -File ...` line above |
 
