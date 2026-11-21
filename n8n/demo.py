@@ -191,6 +191,14 @@ def run():
             gateway = {k: os.environ.get(k, values.get(k, "")) for k in (
                 "BRANE_API_KEY", "BRANE_POLICY_SHA256", "BRANE_BASE_URL", "BRANE_MODEL",
                 "BRANE_TIMEOUT_SECONDS") if k in os.environ or values.get(k)}
+            missing = [k for k in ("BRANE_API_KEY", "BRANE_POLICY_SHA256") if not gateway.get(k)]
+            if missing:
+                # Never print values. The page will show "BRANE not configured" and hold every report.
+                print(f"BRANE is not configured on this machine ({', '.join(missing)} missing in {private}).\n"
+                      "  Every report will be held for a person and no model call is made.\n"
+                      f"  To fix: copy backend/.env.example to {private}, set BRANE_API_KEY to the team key from the\n"
+                      "  BRANE access email (share it privately, never in chat or Git), keep BRANE_POLICY_SHA256 as\n"
+                      "  given, and run the launcher again.", flush=True)
             # New storage and caller credentials belong only to this disposable intake process.
             directory = config.parent
             backend = {"DATABASE_URL": "sqlite:///" + str(directory / "intake.sqlite"),
