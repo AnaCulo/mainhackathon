@@ -48,7 +48,7 @@ BRANE's PERSON detector flags the case tokens `PERSON_01` and `REPORTER_01` as n
 
 Ordinary policy breaches linked to one accused person now produce a tokenised cloud draft, following the policy matrix's P2/P5 row (*"PERSON_01 allegedly approved a purchase without the required second sign-off."*). Criminal-offence wording stays local under P3. Live run on policy-v2 against the synthetic fixtures:
 - T1, T3, P3a, E1, E4 and E5 returned cases. (21 Nov: E5 was held in Run 4 when BRANE flagged the job title "shift manager" as PERSON, and summarised in Run 5 when it did not. No identifier was sent in either run. See `docs/test-protocol.md`.)
-- T2, T4, T5, P3b, E2 and E3 were held locally.
+- T2, T4, T2b (health, fixture `T5`), P3b, E2 and E3 were held locally.
 
 **Combined preview.** BRANE scans a live completion as one conversation, and context changes detection. On 20 Nov every P3a message previewed clean on its own, but the live call came back `Action: placeholder, Redacted: true`. The backend rejected the result (`unverified_completion_headers`), but a cloud call had already happened. The preflight now also previews all messages joined. A case like that stops at the preview, before any model call.
 

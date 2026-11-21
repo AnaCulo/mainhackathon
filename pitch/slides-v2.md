@@ -14,7 +14,7 @@ Acknowledge receipt within seven days. Give feedback within three months of ackn
 
 ## 3. Run the red team
 
-Live run on 21 Nov through the backend, hosted BRANE policy-v2 and the real model ([backend_run_20261121-004849.json](../evidence/backend_run_20261121-004849.json)). The panel displays the observed status, attempt count and headers on the presenter’s run.
+Live run on 21 Nov through the backend, hosted BRANE policy-v2 and the real model ([backend_run_20261121-005741.json](../evidence/backend_run_20261121-005741.json); BRANE down from [backend_outage_20261121-010046.json](../evidence/backend_outage_20261121-010046.json)). The panel displays the observed status, attempt count and headers on the presenter’s run.
 
 | Synthetic input | Tested result |
 | --- | --- |
@@ -22,13 +22,13 @@ Live run on 21 Nov through the backend, hosted BRANE policy-v2 and the real mode
 | T2 · reporter identifiers and a person-linked allegation | 202, P3, protected identifiers counted locally |
 | T3 · same person five times | 200, five mentions, one case token |
 | T4 · instruction in the attachment | 202, P4 |
-| T5 · health details | 202, P3 |
+| T2b · health details | 202, P3 |
 | E1 · identifying shift and role | 202, P1 |
 | E2 · witness named, then by nickname | 200, one local token, model reads “someone from accounts payable” |
 | E4 · controller named, supplier company | 200, controller protected, supplier readable, amount withheld |
 | E5 · spoken name and phone number (voice transcript) | 200, name and “(phone withheld)” redacted locally. An earlier run was held when BRANE flagged “shift manager” as PERSON |
 | E6 · contracts steered to a relative | 202, P3, five mentions kept local |
-| BRANE down · simulated outage | 503, held receipt, zero gateway requests |
+| T5 · check failure: BRANE down (simulated outage) | 503, held receipt, zero gateway requests |
 
 Each held reporter receives a case reference. The register dispatches an acknowledgement and tracks both clocks. Show the actual delivery state for the synthetic mailbox.
 
@@ -38,7 +38,7 @@ Open the case ID in the handler queue. For a held report the task links to the a
 
 ## 5. BRANE enforces, our backend adds defence in depth
 
-BRANE is the enforcement layer: every model request passes its pinned policy, its preview must be clean, and its semantic rules decide what stays local. On 21 Nov our local screening let a realistic expense-fraud report through to the summary path. BRANE’s CRIMINAL_OFFENCE_ALLEGATION rule caught it and kept it local, so it was held for a person. We add local checks for gaps we found by testing BRANE directly:
+BRANE is the enforcement layer: every model request passes its pinned policy, its preview must be clean, and its semantic rules decide what stays local. On 21 Nov our local screening let a realistic expense-fraud report through to the summary path. BRANE’s CRIMINAL_OFFENCE_ALLEGATION rule caught it and kept it local, so it was held for a person. The only model route is the one the brief names, OpenAI via BRANE: `openrouter:openai/gpt-6-luna`, OpenAI’s model reached by BRANE through OpenRouter. There is no direct model key and no fallback. We add local checks for gaps we found by testing BRANE directly:
 
 | Product gap found in direct gateway runs | What the intake code does |
 | --- | --- |

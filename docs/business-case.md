@@ -2,7 +2,7 @@
 
 **What the employer pays for.** On labour alone Čulo does not pay for itself: at 12 reports a year it costs €570 more than an internal process, and it breaks even only at 33 reports (see below). The case for buying is legal and confidential:
 - **Deadline compliance.** Every report, including one held for a person, is registered on receipt. The seven-day acknowledgement and three-month feedback clocks never depend on the model succeeding.
-- **Confidentiality towards the AI vendor.** Identities, contact details, health data and person-linked criminal allegations stay on the employer's host. In the 21 Nov live run no protected identifier appeared in any model-bound message (`evidence/backend_run_20261121-002846.json`, `evidence/backend_run_20261121-004849.json`).
+- **Confidentiality towards the AI vendor.** Identities, contact details, health data and person-linked criminal allegations stay on the employer's host. In the 21 Nov live runs no protected identifier appeared in any model-bound message (`evidence/backend_run_20261121-004849.json`, `evidence/backend_run_20261121-005741.json`).
 
 Price the pilot against the cost of a missed deadline or an identity leak, not against staff minutes.
 

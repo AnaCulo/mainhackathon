@@ -1,0 +1,87 @@
+{
+  "test": "T5 · Check failure (brief p. 9)",
+  "how": "POST /ui/redteam/run {\"id\":\"OUTAGE\"} on the live backend at http://127.0.0.1:8000 (code 30be7eb). The red-team panel switches the gateway off for this one request, so the backend cannot complete or verify the BRANE check.",
+  "backend": "http://127.0.0.1:8000",
+  "policy_version": "synthetic-intake-6",
+  "policy_sha256": "e32261674b2ef8ced8b000da97bcdb0f2bb83683115e70830ba2e45ce868ca23",
+  "result": {
+    "id": "OUTAGE",
+    "status": 503,
+    "case": {
+      "case_id": "WB-aef75f85d5934541912733b3f302a206",
+      "reporter": "REPORTER_01",
+      "status": "held_unverified",
+      "hold_reason": "gateway_unverifiable",
+      "policy": "P5",
+      "received_at": "2026-11-21T00:00:46.147998Z",
+      "decisions": [
+        {
+          "policy": "P5",
+          "action": "BLOCK",
+          "count": null
+        },
+        {
+          "policy": "P6",
+          "action": "HUMAN_ONLY",
+          "count": null
+        }
+      ],
+      "message": "Received. A person will review your report."
+    },
+    "request_id": "1468fd8d-6080-4911-b95d-d105e7e18f60",
+    "trace": [
+      {
+        "t": "2026-11-21T00:00:46.148841Z",
+        "source": "local",
+        "policy": "P5",
+        "action": "intake_received",
+        "count": null,
+        "route": null,
+        "ok": true,
+        "meta": {
+          "matrix_version": "synthetic-intake-6"
+        }
+      },
+      {
+        "t": "2026-11-21T00:00:46.149749Z",
+        "source": "local",
+        "policy": "P5",
+        "action": "BLOCK",
+        "count": null,
+        "route": null,
+        "ok": false,
+        "meta": {
+          "reason": "gateway_unverifiable"
+        }
+      },
+      {
+        "t": "2026-11-21T00:00:46.150638Z",
+        "source": "local",
+        "policy": "P5",
+        "action": "held_registered",
+        "count": null,
+        "route": null,
+        "ok": true,
+        "meta": {}
+      },
+      {
+        "t": "2026-11-21T00:00:46.151043Z",
+        "source": "local",
+        "policy": "P5",
+        "action": "receipt_delivery",
+        "count": null,
+        "route": null,
+        "ok": true,
+        "meta": {
+          "state": "pending"
+        }
+      }
+    ],
+    "outbound_messages": [],
+    "completion_headers": {},
+    "completion_attempts": 0,
+    "delivery": "pending",
+    "handler_url": "http://127.0.0.1:8788/review/WB-aef75f85d5934541912733b3f302a206",
+    "ms": 6
+  }
+}

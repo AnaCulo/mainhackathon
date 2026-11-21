@@ -29,7 +29,7 @@ On the current build, a local hold returns 202. Automation failures retain 5xx. 
 | Demo video | [Playable MP4](../pitch/Culo-demo.mp4) | Approximately 2:45, synthetic narration, actual review captures. **Recorded on the fixture gateway, before the live run.** The demo script marks the segments to re-record. |
 | Demo script | [Role-by-role narration and shots](../pitch/demo-script.md) | Rehearsal timing and live cues for A, B, C and D. |
 | Policy matrix | [Populated CSV](MAIN_Policy_Matrix_Template.csv) | 22 data/decision rows derived from A’s matrix. Enforcement, product gaps and evidence come from the live policy-v2 runs, including D’s observed P6. A’s final sign-off pending. |
-| Security evidence | [Populated test CSV](MAIN_Five_Tests_Template.csv) | 13 rows (T1–T5, T5b, E1–E5, P3a/P3b), observed live on policy-v2 through the backend, with the direct BRANE gate run alongside. C and A must approve the final evidence. |
+| Security evidence | [Populated test CSV](MAIN_Five_Tests_Template.csv) | 13 rows (T1–T5 as numbered in the brief, T2b health data, E1–E5, P3a/P3b), observed live on policy-v2 through the backend, with the direct BRANE gate run alongside. C and A must approve the final evidence. |
 | Workflow results | [D’s verification record](../n8n/verification.md) | Separates published workflow, backend doubles and live baseline. |
 
 The working-agent archive includes the presenter launchers and their source. Supply the reviewed archive with the hand-in. If the platform requires a hosted source or video link, D must publish the reviewed assets under the team’s authorised project and check access from the jury’s perspective. The hand-in CSVs are under submission/. The blank starter files in docs/reference/ are unsuitable for upload.
@@ -38,7 +38,7 @@ The working-agent archive includes the presenter launchers and their source. Sup
 
 - **Friday 20 Nov, 18:00 integration target.** Local published-workflow test completed ahead of target. B and C must verify the real deployed gateway, no-bypass path and failed-check evidence. A must verify the data destinations and the legal treatment of held reports.
 - **Friday night.** D opens the team’s authenticated BuilderBase project and uploads this rough package. Save the confirmation ID or receipt and the CET time. No receipt has been observed.
-- **Saturday 21 Nov, 08:00–09:30.** C runs the configured mandatory and edge fixtures. Preserve both T5 and T5b and confirm the template labelling with the AI-Z desk. A reviews P3a/P3b and signs the matrix. B confirms the deployed agent reference, durable receipt and public demonstration route. D incorporates the observed manual timing, checks hand-in copies, and records the team’s final live cut if available. D’s local MP4 is ready as the rough cut.
+- **Saturday 21 Nov, 08:00–09:30.** C runs the configured mandatory and edge fixtures. T5 is the brief’s check-failure test; the health case is row T2b. A reviews P3a/P3b and signs the matrix. B confirms the deployed agent reference, durable receipt and public demonstration route. D incorporates the observed manual timing, checks hand-in copies, and records the team’s final live cut if available. D’s local MP4 is ready as the rough cut.
 - **Before Saturday 21 Nov, 10:30 CET.** D replaces the rough assets in the correct team entry, verifies the submitted files and runtime, and records BuilderBase’s confirmation and timestamp.
 - **Saturday 21 Nov, 11:00 CET.** All four teammates attend Sint Janskerk check-in.
 

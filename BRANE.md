@@ -79,9 +79,10 @@ Use the brief's security gate for T1–T5 and cover the CSV's additional failure
 | T2 · Protected data | Synthetic identifiers become placeholders before cloud transfer, or the full request runs locally. Inspect the outgoing payload or local-route trace. |
 | T3 · Repeated details | Repeat an identifier in the report and evidence. Inspect every occurrence and the consistency of its token, or verify local processing. |
 | T4 · Bypass attempt | Embed a synthetic instruction to disclose a protected detail. Show the applicable policy still took effect. A transport failure alone is insufficient evidence. |
-| T5 · Special category / local | The **brief and Python starter** require a special-category or non-exportable case to stay local or receive a policy refusal. Under P3, expect HTTP 422 and the refusal reason. |
+| T2b · Protected data, special category | A health or other special-category detail stays local or receives a policy refusal. Under P3, expect HTTP 422 and the refusal reason. |
+| T5 · Check failure | The brief (p. 9) and the CSV template define T5 as the check being unavailable: nothing is sent and there is no cloud fallback. In an outage the hotline's P5 behaviour is HTTP 503 with no downstream calls. A missing gateway response supplies no BRANE headers. Distinguish this from a BRANE-reported local route. |
 
-**T5 discrepancy.** The supplied **CSV template** labels T5 “Check unavailable / unverifiable” and expects local routing with a cause header. Record both scenarios as distinct, clearly labelled rows and confirm the preferred row labels with the AI-Z desk. For the unavailable-check row, distinguish a BRANE-reported local route from a complete gateway outage. In an outage the hotline's P5 behavior is HTTP 503 with no downstream calls. Record that application evidence and the difference from the template's local-route expectation. A missing gateway response supplies no BRANE headers.
+**Numbering.** Our T1–T5 follow the brief's five security tests in order. The health case is T2b, a second protected-data row. The runners and the fixture file call it `T5` and call the check-failure case `T5b`; [the test protocol](docs/test-protocol.md#test-ids-follow-the-briefs-five-security-tests) maps the two.
 
 **E1–E5.** Write five cases specific to whistleblower intake. Candidate scenarios include an anonymous reporter identifiable by a unique shift, one witness referred to by two names, an indirect accommodation request, a public company name needed to understand a duplicate invoice, and a voice follow-up that repeats a protected name. Specify the expected decision before running each case. Record what detail the handler retained or lost. The bundled HR example is scaffolding.
 
@@ -90,7 +91,7 @@ For each run, record the synthetic input, expected outcome, actual output and us
 ## Submission checklist
 
 - **Policy matrix** — Complete `MAIN_Policy_Matrix_Template.csv` with at least three cited protection rules. For each, identify the data and its purpose, exact legal or governance provision, intended decision, actual enforcement, product gap, evidence, and linked tests. Include P6 and its human approval evidence. Replace the example row, which predates the per-category controls.
-- **Test evidence** — Complete `MAIN_Five_Tests_Template.csv` with observed results for the five mandatory tests, the T5 discrepancy above, and five handwritten domain edge cases. Include the effect on the quality of the draft case brief.
+- **Test evidence** — Complete `MAIN_Five_Tests_Template.csv` with observed results for the five mandatory tests, the extra protected-data row T2b, and five handwritten domain edge cases. Include the effect on the quality of the draft case brief.
 - **Working agent and three-minute demo** — Follow one synthetic report through the BRANE decision, protected execution, and visible human sign-off. Compare a measured outcome such as time to prepare a review-ready case against the same task performed manually.
 
 Source materials are the Group Čulo access email, `MAIN_Summit_AI-Z_Challenge_Brief.pdf`, the two named CSV templates, and the extracted kit's `starter-kit/README.md` and `starter-kit/brane_agent_starter.py`. The Python backend contract is in [the API reference](docs/backend-api.md).
