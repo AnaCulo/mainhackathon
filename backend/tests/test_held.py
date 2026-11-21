@@ -6,7 +6,7 @@ import pytest
 
 from .doubles import BACKEND, CONTROL
 
-FIXTURES = json.loads((Path(__file__).resolve().parents[2] / "data/synthetic_reports.json").read_text())["cases"]
+FIXTURES = json.loads((Path(__file__).resolve().parents[2] / "data/synthetic_reports.json").read_text(encoding="utf-8"))["cases"]
 
 
 @pytest.mark.parametrize("fixture", ["T2", "T5"])

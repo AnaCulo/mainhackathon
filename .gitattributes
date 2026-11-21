@@ -1,0 +1,18 @@
+# Keep LF line endings on every platform. Git for Windows otherwise converts text files to
+# CRLF on checkout, which changes file hashes the launcher and evidence record and breaks
+# the shell launcher.
+* text=auto eol=lf
+
+*.zip binary
+*.mp3 binary
+*.m4a binary
+*.wav binary
+*.mp4 binary
+*.png binary
+*.pdf binary
+*.pptx binary
+*.docx binary
+*.sqlite binary
+
+# CSV evidence and the organisers' templates keep their recorded line endings.
+*.csv -text

@@ -6,7 +6,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
-HOLD_REASONS = json.loads(Path(__file__).with_name("hold_reasons.json").read_text())
+HOLD_REASONS = json.loads(Path(__file__).with_name("hold_reasons.json").read_text(encoding="utf-8"))
 
 Text = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=16000)

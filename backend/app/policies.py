@@ -7,7 +7,7 @@ from pathlib import Path
 from .models import Decision, Identity
 from .security import Stop
 
-RULES = json.loads(Path(__file__).with_name("policy.json").read_text())
+RULES = json.loads(Path(__file__).with_name("policy.json").read_text(encoding="utf-8"))
 QUESTIONS = {
     "what": "What happened?",
     # BRANE's detector tags "Approximately" as PERSON, which makes every preview

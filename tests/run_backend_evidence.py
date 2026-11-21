@@ -78,7 +78,7 @@ for case in json.loads((ROOT / "data" / "synthetic_reports.json").read_text(enco
           f"{body.get('hold_reason') or body.get('summary')}")
 
 out = ROOT / "evidence" / f"backend_run_{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
-version = json.loads((BACKEND / "app/policy.json").read_text())["version"]
+version = json.loads((BACKEND / "app/policy.json").read_text(encoding="utf-8"))["version"]
 out.write_text(json.dumps({"backend": url, "policy_version": version, "policy_sha256": env.get("BRANE_POLICY_SHA256"),
                            "results": results}, indent=2, ensure_ascii=False), encoding="utf-8")
 print(f"Wrote {out.relative_to(ROOT)}")

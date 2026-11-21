@@ -50,3 +50,50 @@ def test_posix_still_restricts_to_owner(tmp_path):
     path.touch(mode=0o644)
     Database(path, Fernet.generate_key().decode())
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
+
+
+# Windows decodes text with the ANSI code page (cp1252) unless told otherwise, which
+# mangles or rejects UTF-8 such as the non-ASCII terms in policy.json, and a user folder
+# like "Čulo" in a path that Node prints. Every text read, write and decoded subprocess
+# output in the project's Python must name UTF-8.
+def _text_io_without_encoding(tree):
+    import ast
+
+    def mode(call, index):
+        args = [a for a in call.args[index:index + 1]] + [k.value for k in call.keywords if k.arg == "mode"]
+        return next((a.value for a in args if isinstance(a, ast.Constant) and isinstance(a.value, str)), None)
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        kwargs = {k.arg for k in node.keywords}
+        if "encoding" in kwargs:
+            continue
+        f = node.func
+        name = f.attr if isinstance(f, ast.Attribute) else f.id if isinstance(f, ast.Name) else None
+        if name in {"read_text", "write_text"}:
+            yield node
+        elif name == "open" and isinstance(f, ast.Name):
+            if "b" not in (mode(node, 1) or "r"):
+                yield node
+        elif name in {"open", "fdopen"} and isinstance(f, ast.Attribute):
+            owner = f.value.id if isinstance(f.value, ast.Name) else None
+            m = mode(node, 1 if name == "fdopen" else 0)
+            if owner not in {"os", "tarfile", "wave", "zipfile", "webbrowser"} and m is not None and "b" not in m:
+                yield node
+        elif name in {"run", "check_output", "Popen", "call", "check_call"} and any(
+                k.arg in {"text", "universal_newlines"} and isinstance(k.value, ast.Constant) and k.value.value is True
+                for k in node.keywords):
+            yield node
+
+
+def test_python_text_io_names_utf8():
+    import ast
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    files = [p for d in ("backend/app", "backend/scripts", "backend/tests", "n8n", "tests", "voice", "scripts", "brane")
+             for p in (root / d).rglob("*.py")]
+    found = [f"{p.relative_to(root)}:{n.lineno}"
+             for p in files for n in _text_io_without_encoding(ast.parse(p.read_text(encoding="utf-8")))]
+    assert len(files) > 40 and found == []

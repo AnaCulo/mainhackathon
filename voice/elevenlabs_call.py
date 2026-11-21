@@ -213,7 +213,8 @@ def main():
     out.write_text(json.dumps({
         "note": "Generated caller audio (macOS say), synthetic report. ElevenLabs STT/TTS, backend + live BRANE.",
         "agent_id": AGENT, "conversation_id": meta.get("conversation_id"), "session_id": session_id,
-        "caller_lines_spoken": TURNS, "events": log, "bridge_finalize": result}, indent=2, ensure_ascii=False))
+        "caller_lines_spoken": TURNS, "events": log, "bridge_finalize": result}, indent=2, ensure_ascii=False),
+        encoding="utf-8")
     fmt = meta.get("agent_output_audio_format", "pcm_16000")
     if audio and fmt.startswith("pcm_"):
         with wave.open(str(out.with_name(out.stem + "_agent.wav")), "wb") as w:

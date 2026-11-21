@@ -1,0 +1,51 @@
+name: Platforms
+
+# Proves the hotline runs on Windows as well as Linux: the backend test suite, the handler
+# register tests, the voice dependencies and the real presenter launcher (n8n, register and
+# backend started together, no team credential, fails closed at the form).
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install backend and voice dependencies
+        run: python -m pip install -r backend/requirements.txt -r backend/requirements-voice.txt
+
+      - name: Voice decoding imports
+        run: python -c "import av, faster_whisper; from faster_whisper.audio import decode_audio; print('voice ok', av.__version__)"
+
+      - name: Install n8n for the launcher test
+        shell: bash
+        run: |
+          npm install --prefix "$RUNNER_TEMP/n8n" n8n@2.48.7 --no-audit --no-fund
+          echo "N8N_PACKAGE=$RUNNER_TEMP/n8n" >> "$GITHUB_ENV"
+
+      - name: Backend tests, including the real launcher
+        working-directory: backend
+        run: python -m pytest -q -p no:cacheprovider
+
+      - name: Handler register tests
+        run: node --test n8n/register.test.mjs

@@ -311,7 +311,7 @@ def test_team_control_keeps_the_independent_process_question(setup, submit):
     control = json.loads(
         (
             Path(__file__).resolve().parents[2] / "data/synthetic_reports.json"
-        ).read_text()
+        ).read_text(encoding="utf-8")
     )["cases"][0]
     case = submit(control["report"]).json()
     assert (

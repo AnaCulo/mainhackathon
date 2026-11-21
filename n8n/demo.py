@@ -31,7 +31,7 @@ def revision():
         if not (ROOT / ".git").exists():
             raise FileNotFoundError
         head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT,
-                                       stderr=subprocess.DEVNULL, text=True).strip()
+                                       stderr=subprocess.DEVNULL, text=True, encoding="utf-8").strip()
     except (FileNotFoundError, subprocess.CalledProcessError):
         head = None
     return {"checkout_head": head, "presenter_source_sha256": digest.hexdigest()}
@@ -87,7 +87,7 @@ def run():
         parser.error("The legacy test harnesses use fixed ports. Use --isolated for presenter runs.")
 
     node = shutil.which("node")
-    if not node or not subprocess.check_output([node, "--version"], text=True).startswith("v24."):
+    if not node or not subprocess.check_output([node, "--version"], text=True, encoding="utf-8").startswith("v24."):
         raise SystemExit("Use Node 24 for this demo.")
     if not args.offline:
         import uvicorn  # noqa: F401 -- fail before provisioning if dependencies are missing
@@ -133,9 +133,9 @@ def run():
         port_env = {"DEMO_N8N_PORT": str(n8n_port), "DEMO_REGISTER_PORT": str(register_port),
                     "DEMO_INTAKE_PORT": str(intake_port)}
         config = Path(subprocess.check_output([node, "n8n/setup-demo.mjs"], cwd=ROOT,
-                                               env=local_env | port_env, text=True).strip())
+                                               env=local_env | port_env, text=True, encoding="utf-8").strip())
         (config.parent / "revision.json").write_text(json.dumps(revision()), encoding="utf-8")
-        demo = dict(line.split("=", 1) for line in config.read_text().splitlines())
+        demo = dict(line.split("=", 1) for line in config.read_text(encoding="utf-8").splitlines())
         register = start(stack, [node, "n8n/service.mjs"], local_env | demo |
                          {"DEMO_INTAKE": "0" if args.offline else "1"}, runtime / "register.log", ROOT)
         wait_for(register, register_port, "/review", 401)
@@ -164,7 +164,7 @@ def run():
                        "BACKEND_API_KEY": secrets.token_urlsafe(32),
                        "ELEVENLABS_BRIDGE_KEY": secrets.token_urlsafe(32)}
             caller_config = directory / "backend.env"
-            with open(caller_config, "x", opener=lambda path, flags: os.open(path, flags, 0o600)) as f:
+            with open(caller_config, "x", encoding="utf-8", opener=lambda path, flags: os.open(path, flags, 0o600)) as f:
                 for key, value in backend.items():
                     print(f"{key}={value}", file=f)
             intake_env = local_env | backend | gateway | port_env | {

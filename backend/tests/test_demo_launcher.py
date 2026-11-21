@@ -22,7 +22,7 @@ def test_default_launcher_fails_closed_at_the_presenter_form(tmp_path):
                     str(root / "n8n/demo.ps1"), "-Isolated"]
     else:
         launcher = ["bash", str(root / "n8n/demo.sh"), "--isolated"]
-    result = subprocess.run(launcher, cwd=root, env=env, capture_output=True, text=True, timeout=180)
+    result = subprocess.run(launcher, cwd=root, env=env, capture_output=True, text=True, encoding="utf-8", timeout=180)
     assert result.returncode != 0
     # The default command must submit the form. A fixture-only walkthrough, or a
     # startup error before the UI was reached, cannot generate this correlated receipt.

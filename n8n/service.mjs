@@ -1,7 +1,7 @@
 import {createServer} from 'node:http';
 import {createHmac,randomBytes,timingSafeEqual} from 'node:crypto';
-import {pathToFileURL} from 'node:url';
-import {existsSync,mkdirSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+import {existsSync,mkdirSync,realpathSync} from 'node:fs';
 import {join} from 'node:path';
 import {homedir} from 'node:os';
 import {Register} from './register.mjs';
@@ -173,7 +173,10 @@ export function tableAdapter(env){
     return [400,401,403,404,422].includes(resp.status)?'failed':'uncertain';
   };
 }
-if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href){
+// Compare real paths: on Windows the drive letter's case or a short (8.3) name can differ
+// between argv and import.meta.url, and a mismatch would silently skip starting the register.
+const same=(a,b)=>{try{const x=realpathSync.native(a),y=realpathSync.native(b);return process.platform==='win32'?x.toLowerCase()===y.toLowerCase():x===y;}catch{return false;}};
+if(process.argv[1] && same(fileURLToPath(import.meta.url),process.argv[1])){
   const e=process.env,dir=e.CASE_DIR??join(e.LOCALAPPDATA??homedir(),'culo-protected-demo');
   const [cmd,id,kind,state]=process.argv.slice(2);
   const reviewOnly=cmd==='review';

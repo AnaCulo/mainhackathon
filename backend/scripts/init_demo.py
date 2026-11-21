@@ -18,8 +18,8 @@ except FileExistsError:
     raise SystemExit(
         ".env already exists. Keep the existing storage key for its database."
     )
-with os.fdopen(fd, "w") as f:
-    for line in template.read_text().splitlines():
+with os.fdopen(fd, "w", encoding="utf-8") as f:
+    for line in template.read_text(encoding="utf-8").splitlines():
         key, _, value = line.partition("=")
         print(f"{key}={values.get(key, value)}", file=f)
 print(
