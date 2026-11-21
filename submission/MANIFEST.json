@@ -1,7 +1,7 @@
 {
-  "git_head": "ebd71d89e4913868e37aa9f0a33b4ae08e50445f",
+  "git_head": "d7fb52eb956684b6ef686389ec1cf70309adf704",
   "policy_version": "synthetic-intake-6",
-  "timestamp": "2026-11-21T01:31:27.988153+00:00",
+  "timestamp": "2026-11-21T01:33:06.823424+00:00",
   "files": {
     ".env.example": "1afe93ca38c807e189f7fd66ca2f3452d8d333b1549504170cc562462e4b9383",
     ".gitattributes": "9fe57497890b1b9874ea77df453e4fa10d700fa856b8fa333811503c7bee1ae1",
@@ -155,7 +155,7 @@
     "pitch/demo-script.md": "e181aacbf4ffb7913340ae84f64276b24df83d51c13b4ee10bca91022b7905cd",
     "pitch/slides-v2.md": "4d6f085330f5ba339358a1cb7ddcb6860a8528f60083b9732305910a65b13bc6",
     "scripts/package_submission.py": "633ec4cf830888783eb533fb979e10053d024815b6fb5fcc6f665242cf094a59",
-    "submission/BuilderBase.md": "af5b25459514491aacee5eaa725f0d9d70a495fe9889ead35c8453a7693eea3a",
+    "submission/BuilderBase.md": "11a9a384063f7c07ada0864451d9a84de2da688789e73f79580db8ca1c2a4cb0",
     "submission/EVIDENCE_STATUS.md": "8f672de447e36b7b57a759f2c3c14bbe95b24a4a03bacfb7e83fc5f6e7dd57b8",
     "submission/MAIN_Five_Tests_Template.csv": "d4572c08d5ffbc4b6974bf17f7f74e7fb832338ca0c9c46822750f3b868e35c0",
     "submission/MAIN_Policy_Matrix_Template.csv": "9f4855e5f7c8dce2c12429a7b8dfe90dad9db53c7b1d7c99a41eb39357561f2c",
