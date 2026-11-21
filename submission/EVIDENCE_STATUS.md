@@ -12,7 +12,7 @@
 | [realistic_reports_preview_20261121.json](../evidence/realistic_reports_preview_20261121.json) | Five non-fixture reports from a reviewer. Two reach a summary. BRANE's CRIMINAL_OFFENCE_ALLEGATION rule keeps an expense-fraud report local. Local rules hold a Dutch forgery report (P3) and a health euphemism (P3). Preview only, no model call. |
 | Live adapter tests, 21 Nov | `RUN_LIVE_BRANE=1 pytest tests/test_live_brane.py`: 3/3 passed. |
 
-**Not live.** The demo video (`pitch/Culo-demo.mp4`) was recorded on 20 Nov with the legacy Node adapter and a simulated gateway. It is identified as historical wherever it is shown. Timing for a manual baseline has not been measured.
+**Demo video.** `pitch/Culo-demo.mp4` was recorded on 21 Nov from the current website (synthetic-intake-6) and handler queue, with hosted BRANE policy-v2 and the real model. The waiting time for BRANE is cut. **Not measured.** Timing for a manual baseline.
 
 **Test IDs.** T1–T5 follow the brief's five security tests; T5 is check failure. The health case is T2b, stored as fixture `T5` in `data/` and the run files ([mapping](../docs/test-protocol.md#test-ids-follow-the-briefs-five-security-tests)).
 

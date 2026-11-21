@@ -26,7 +26,7 @@ On the current build, a local hold returns 202. Automation failures retain 5xx. 
 | Working agent and source | [Working agent ZIP](working-agent.zip) | The live Python backend (`backend/app`, used for every live BRANE result), the historical recording adapter in `legacy/node-adapter/`, workflow export, BRANE policy-as-code, setup, tests, legal and voice materials. Start the presenter with `n8n/demo.sh --hold` or `.\n8n\demo.ps1 -Hold` and open http://127.0.0.1:8000/. The private configuration and smoke test are in n8n/README.md. |
 | Business case | [Dutch employer business case](../docs/business-case.md) | Sourced pricing and market bands, buyer economics, live and fixture timings, and the manual exercise (`tests/manual_benchmark.py`). |
 | Editable pitch | [PowerPoint deck](../pitch/Culo-pitch.pptx) | Six rendered slides and speaker notes. |
-| Demo video | [Playable MP4](../pitch/Culo-demo.mp4) | Approximately 2:45, synthetic narration, actual review captures. **Recorded on the fixture gateway, before the live run.** The demo script marks the segments to re-record. |
+| Demo video | [Playable MP4](../pitch/Culo-demo.mp4) | 1:47, narrated with the hotline agent's ElevenLabs voice. Recorded live on 21 Nov: a typed report, the brief's five security tests from the red-team panel, and a handler recording a decision, with hosted BRANE policy-v2 and the real model. Waiting time for BRANE is cut. |
 | Demo script | [Role-by-role narration and shots](../pitch/demo-script.md) | Rehearsal timing and live cues for A, B, C and D. |
 | Policy matrix | [Populated CSV](MAIN_Policy_Matrix_Template.csv) | 22 data/decision rows derived from A’s matrix. Enforcement, product gaps and evidence come from the live policy-v2 runs, including D’s observed P6. A’s final sign-off pending. |
 | Security evidence | [Populated test CSV](MAIN_Five_Tests_Template.csv) | 13 rows (T1–T5 as numbered in the brief, T2b health data, E1–E5, P3a/P3b), observed live on policy-v2 through the backend, with the direct BRANE gate run alongside. C and A must approve the final evidence. |
@@ -41,10 +41,11 @@ Done:
 - Security tests numbered as in the brief. T5 is check failure, and the health case is row T2b.
 - Windows and Linux CI check passing, including `n8n\demo.ps1`.
 - Simulated judge test, with its fixes and regression tests.
+- Demo video re-recorded live on the current website.
 
 Still to do:
 - **A** reviews P3a/P3b and signs the policy matrix and test CSV.
-- **D** records the manual timing for `tests/manual_benchmark.py` and re-records the demo video on the current website with live BRANE.
+- **D** records the manual timing for `tests/manual_benchmark.py`.
 - **A teammate on Windows** runs one typed and one spoken report with the live key.
 - **Before 10:30 CET.** D uploads `working-agent.zip` and the assets above to the team's BuilderBase entry, checks them from the jury's view, and records the confirmation ID and time.
 - **11:00 CET.** All four teammates attend Sint Janskerk check-in.

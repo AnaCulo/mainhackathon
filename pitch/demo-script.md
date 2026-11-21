@@ -1,6 +1,6 @@
 # Group Čulo · 2:50 live demo
 
-Open the local Red team panel and the authenticated handler queue before starting. Use synthetic fixtures. Read outcomes from the panel. The MP4 is a historical recording made with the earlier Node adapter and simulated gateway. Current hosted results remain pending until collected. [Evidence status](../submission/EVIDENCE_STATUS.md)
+Open the local Red team panel and the authenticated handler queue before starting. Use synthetic fixtures. Read outcomes from the panel. The MP4 (1:47) was recorded on 21 Nov from the current website and handler queue, with hosted BRANE policy-v2 and the real model, and narrated with the hotline agent's ElevenLabs voice. [Evidence status](../submission/EVIDENCE_STATUS.md)
 
 | Time | Show | Say |
 | --- | --- | --- |
@@ -13,7 +13,7 @@ Open the local Red team panel and the authenticated handler queue before startin
 | 2:05–2:30 | Open E1 in the register. Show deadlines, authenticated local review and the human form. Use a synthetic reason and the conflict check to record the handler’s chosen action. | “Only the designated handler can see the original here. The handler chooses the next step, gives a reason and later approves feedback.” |
 | 2:30–2:50 | Show the benchmark table and the historical BRANE findings. | “BRANE enforces our pinned policy, and our backend adds local checks for the gaps we found. The value is meeting the deadlines and keeping identities from the AI vendor. Hosted runs reached the handler in 6.22 to 7.62 seconds, and manual timing is still to be measured. Unstable name tokens and leaked spoken digits led us to build the facts locally. We’re interviewing five compliance officers about volume and follow-up.” |
 
-If a live check fails, show its real held receipt and status. Use the historical recording only when identified on screen as historical.
+If a live check fails, show its real held receipt and status, or play the recorded MP4.
 
 ## If the jury asks which model we use
 
