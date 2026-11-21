@@ -45,7 +45,7 @@ Done:
 
 Still to do:
 - **A** reviews P3a/P3b and signs the policy matrix and test CSV.
-- **D** records the manual timing for `tests/manual_benchmark.py`.
+- **D** records the manual timing for `tests/manual_benchmark.py` (about 2 minutes is the current estimate, from `scripts/estimate_manual_baseline.py`).
 - **A teammate on Windows** runs one typed and one spoken report with the live key.
 - **Before 10:30 CET.** D uploads `working-agent.zip` and the assets above to the team's BuilderBase entry, checks them from the jury's view, and records the confirmation ID and time.
 - **11:00 CET.** All four teammates attend Sint Janskerk check-in.

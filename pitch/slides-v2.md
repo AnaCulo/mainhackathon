@@ -57,6 +57,6 @@ BRANE is the enforcement layer: every model request passes its pinned policy, it
 
 The value is legal and confidential, not labour. Every report, including held ones, is registered on receipt, so the seven-day acknowledgement clock never depends on the model. No identity reaches the model vendor: in the 21 Nov live runs no protected identifier appeared in any model-bound message. On labour alone Čulo costs €570 a year more than an internal process at 12 cases, and breaks even only at 33 cases.
 
-Still to measure: on-time acknowledgement rate across all received cases, and a timed manual baseline (two teammates, same ledger text). Hosted runs reached a usable handler page in 6.22–7.62 s (n = 4).
+Still to measure: on-time acknowledgement rate across all received cases, and a timed manual baseline (two teammates, same ledger text). Hosted runs reached a usable handler page in 6.22–7.62 s (n = 4). By hand we estimate about 2 minutes for the same three-sentence report (simulation from published typing and reading speeds, not yet timed).
 
 Start with Dutch 50–249 employers. Prioritise high-volume multi-entity groups and reporting platforms buying a triage add-on. Our next step is five compliance-officer interviews and a timed manual comparison. [Business case and benchmark protocol](../docs/business-case.md)
