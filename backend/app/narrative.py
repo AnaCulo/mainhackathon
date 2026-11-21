@@ -149,6 +149,7 @@ _PLACE = re.compile(r"\b(?P<prep>[Ii]n|[Nn]ear|[Oo]utside|[Aa]round|[Bb]ased in)
 _NON_LATIN = re.compile(r"[^\W\d_A-Za-z\u00C0-\u024F\u1E00-\u1EFF]+(?:[\s·・-]*[^\W\d_A-Za-z\u00C0-\u024F\u1E00-\u1EFF]+)*")
 
 _SAFE_CAPS = {
+    "mr", "mrs", "ms", "miss", "mx", "dr", "prof", "st",
     "i", "i'm", "i've", "i'd", "i'll", "hr", "it", "ceo", "cfo", "coo", "cto", "vp", "eu",
     "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
     "january", "february", "march", "april", "may", "june", "july", "august",
@@ -177,12 +178,16 @@ _COMPANY = re.compile(
 _NICKNAME = r"(?:,\s*|\s+)(?:as|what|like)\s+(?:everyone|everybody|people|we|they|colleagues|the team|staff)\s+calls?\s+(?:her|him|them)\b"
 _WORD = r"[A-Z][\w'’-]*"
 # Name particles: "Ruud van Leeuwen", "van der Berg".
-_PARTICLE = r"(?:van|de|der|den|von|ten|ter|al|da|di|du|le|la)"
+_PARTICLE = r"(?:van|de|der|den|von|ten|ter|al|el|da|di|du|le|la|bin|bint|ibn|ben|abu|ap)"
+# "Mr. Okafor", "Dr Patel": a title is part of the name, and its full stop ends no sentence.
+_TITLE = r"(?:Mr|Mrs|Ms|Miss|Mx|Dr|Prof)"
 _TOKEN = re.compile(r"\b(?:PERSON|REPORTER)_(\d{2,})\b")
 
 
 def _is_sentence_start(text, index):
     before = text[:index].rstrip(" \t\"'(“‘")
+    if re.search(rf"(?<!\w){_TITLE}\.$", before):
+        return False
     return not before or before[-1] in ".!?:\n"
 
 
@@ -195,7 +200,7 @@ _PERSON_VERBS = (
 
 def _name_runs(text):
     """Capitalised runs that look like names; a lone sentence-initial word does not."""
-    for m in re.finditer(rf"(?:{_PARTICLE}\s+)?{_WORD}(?:\s+(?:{_PARTICLE}\s+)*{_WORD})*", text):
+    for m in re.finditer(rf"(?:{_PARTICLE}(?:\s+|-))*{_WORD}(?:\s+(?:{_PARTICLE}(?:\s+|-))*{_WORD})*", text):
         words = m[0].split()
         start = m.start()
         while words and (words[0].casefold() in _SAFE_CAPS or _TOKEN.fullmatch(words[0])):
@@ -327,6 +332,7 @@ def protect(protected: str, mentions: list[str]) -> Protected:
         return f"{m['prep']} (place withheld)"
 
     text = _PLACE.sub(place, text)
+    text = re.sub(rf"(?i)(?<!\w)({_TITLE}\.?\s+)([a-zà-ÿ])", lambda m: m[1].capitalize() + m[2].upper(), text)
     numbers = [int(n) for n in _TOKEN.findall(" ".join(mentions))]
     next_person = max(numbers, default=0) + 1
     names, new = {}, []
@@ -401,6 +407,9 @@ def to_narrative(text):
     )
     # "Hanneke, as everyone calls her," adds nothing once the name is a role.
     text = re.sub(rf"(?<=_\d\d){_NICKNAME},?", "", text, flags=re.IGNORECASE)
+    text = re.sub(rf"(?i)(?<!\w){_TITLE}\.?\s+(?:{_PARTICLE}(?:\s+|-))*(?=(?:PERSON|REPORTER)_\d{{2,}})", "", text)
+    text = re.sub(rf"(?i)(?<![\w-])(?:{_PARTICLE}(?:\s+|-))+(?=(?:PERSON|REPORTER)_\d{{2,}})", "", text)
+    text = re.sub(r"\b((?:PERSON|REPORTER)_\d{2,})(?:\s+\1\b)+", r"\1", text)
     # "Everyone calls him PERSON_01." only links a nickname, which is already bound locally.
     text = re.sub(
         r"(?i)(?:^|(?<=[.!?]\s))(?:everyone|everybody|people|we|they)\s+calls?\s+(?:him|her|them)\s+"
@@ -438,7 +447,7 @@ def to_narrative(text):
     )
     # "my colleague PERSON_01 keeps" / "the dispatcher, PERSON_02, said" -> role only
     text = re.sub(
-        rf"\b(?P<role>{_DETERMINER}\s+(?:(?!(?:and|or|but|then|so)\b)[a-z-]+\s+){{0,2}}(?!(?:and|or|but|then|so)\b)[a-z-]+),?\s+(?P<token>(?:PERSON|REPORTER)_\d{{2,}}),?",
+        rf"\b(?P<role>{_DETERMINER}\s+(?:(?!(?:and|or|but|then|so)\b)(?:[A-Z]{{2,5}}|[a-z-]+)\s+){{0,2}}(?!(?:and|or|but|then|so)\b)(?:[A-Z]{{2,5}}|[a-z-]+)),?\s+(?P<token>(?:PERSON|REPORTER)_\d{{2,}}),?",
         role, text,
     )
 
@@ -446,7 +455,9 @@ def to_narrative(text):
         if m[0] in seen:
             return "that person"
         seen.append(m[0])
-        return "someone" if len(seen) == 1 else "another person"
+        # Live previews (21 Nov) flagged "Someone in the lab ..." as PERSON in 6 of 24 sentences,
+        # "A staff member ..." in 2 of 24. Neither placeholder carries a name.
+        return "a staff member" if len(seen) == 1 else "another staff member"
 
     text = _TOKEN.sub(plain, text)
     text = re.sub(r"\s+([,.;!?])", r"\1", text)

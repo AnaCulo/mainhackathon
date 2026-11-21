@@ -114,7 +114,7 @@ def test_declared_people_travel_as_person_numbers(setup, submit):
     r = submit(text, identities=[{"kind": "person", "aliases": ["Ada Example"]}])
     assert r.status_code == 200 and r.json()["persons"] == ["PERSON_01"]
     sent = completions(double)[0]["messages"][1]["content"]
-    assert "Someone keeps shouting" in sent and "Ada" not in json.dumps([b for _, b, _ in double.requests])
+    assert "A staff member keeps shouting" in sent and "Ada" not in json.dumps([b for _, b, _ in double.requests])
 
 
 def test_money_stays_local(setup, submit):
@@ -198,16 +198,16 @@ def test_redaction_and_eligibility_units():
         "Paid (amount withheld) and (amount withheld) at (time withheld) on (date withheld)."
     )
     assert out("Invoice INV-2024-0012 went to Anna in Accounts Payable.") == (
-        "Invoice (reference withheld) went to someone in Accounts Payable."
+        "Invoice (reference withheld) went to a staff member in Accounts Payable."
     )
     assert out("Last Tuesday HR said no.") == "Last Tuesday HR said no."
     # Same name at a sentence start is caught once it is seen mid-sentence.
     p = protect("Tom keeps texting me. I asked Tom Becker and Tom to stop.", ["PERSON_01"])
-    assert p.outbound == "Someone keeps texting me. I asked that person and that person to stop."
+    assert p.outbound == "A staff member keeps texting me. I asked that person and that person to stop."
     assert p.new_mappings == [("PERSON_02", "Tom Becker", "person")]
     p = protect("My colleague Tom Becker keeps texting me. Anna saw it.", [])
-    assert p.outbound == "My colleague keeps texting me. Another person saw it."
-    assert out("PERSON_01 told REPORTER_01 off.", ["PERSON_01"]) == "Someone told the reporter off."
+    assert p.outbound == "My colleague keeps texting me. Another staff member saw it."
+    assert out("PERSON_01 told REPORTER_01 off.", ["PERSON_01"]) == "A staff member told the reporter off."
     assert out("My name is REPORTER_01 and my boss shouts.") == "My boss shouts."
     assert not eligible("Help.")
     assert not eligible("Would it be a problem if exits were blocked by boxes?")

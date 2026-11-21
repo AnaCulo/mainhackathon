@@ -129,8 +129,9 @@ class BraneClient:
             route="cloud",
             metadata={"messages_checked": len(messages), "combined_checked": combined_check},
         )
-        # What actually leaves for BRANE: already-protected, closed-vocabulary text only
-        # (caller-derived messages; the server-owned system prompt is a constant).
+        # What actually leaves for BRANE, already protected locally: closed-vocabulary facts
+        # and question IDs, or (narrative path) a locally redacted copy of free text. Either way
+        # it has just previewed clean. The server-owned system prompt is a constant.
         audit(
             "gateway",
             "outbound_messages",

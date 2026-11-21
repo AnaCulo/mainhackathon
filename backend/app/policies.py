@@ -119,7 +119,11 @@ def specific_observations(text):
 
 
 def screen(text: str, identities: list[Identity], *, allow_incomplete=False, audit=None) -> Screened:
-    """Construct a new document exclusively from a closed vocabulary.
+    """Screen a report locally and tokenise the identities it declares or names.
+
+    The result feeds two outbound paths: closed-vocabulary facts (fact_extraction) when the
+    grammar recognises the report, otherwise a locally redacted copy (narrative.protect).
+    Both are previewed by BRANE and held for a person unless the preview is clean.
 
     Name recognition improves local indexing. It never authorizes a span of
     original narrative for export. Case-scoped aliases can be supplied in any script.

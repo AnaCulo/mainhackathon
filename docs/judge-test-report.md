@@ -47,6 +47,22 @@ Across **13 judge scenarios plus the red-team panel, no protected value left the
 
 Each fix has a regression test in `backend/tests/test_tester_findings.py` or `backend/tests/test_redteam_ui.py`. The backend has 265 passing tests.
 
+## Follow-up review, 21 Nov: names the local redaction missed
+
+A second review ran unusual names through the free-text path. Locally, 5 of 13 inputs still contained a name when they reached BRANE's preview:
+- "Mr. Okafor", "Mrs. Jansen" and "Dr. Patel": a title with a full stop made the surname look like the start of a sentence
+- "Mohammed al-Rashid" and "Ahmed bin Salim": hyphenated and Arabic particles were not joined to the name
+
+Sent live, hosted BRANE's preview held four of the five, and the fifth went through the closed-vocabulary path. No name reached the model. But the names did reach BRANE's hosted preview, which matrix row P1 does not allow, and BRANE's detector is not deterministic.
+
+The local redaction now handles:
+- titles with or without a full stop, also in lowercase ("mr okafor")
+- the particles al-/el-/bin/ibn/abu/van der
+- double-barrelled and hyphenated first names
+- acronym roles ("our CFO Sanne" becomes "our CFO")
+
+Look-alikes such as "St. Mary's", "U.S." and "in the bin" are left alone. BRANE's PERSON detector also flagged our own placeholder "Someone …" in 6 of 24 live previews, against 2 of 24 for "A staff member …". Unnamed people are now written as "a staff member", which holds fewer harmless reports for a person. 17 regression tests in `backend/tests/test_tester_findings.py` cover these. The docs now describe the real design in three layers: closed-vocabulary facts, local redaction of free text, then a BRANE check that must be clean.
+
 ## Open points for the team
 
 - Dutch or other non-English instructions are stopped by BRANE, not by our local P4 check. That is safe, but a judge may ask why. Answer: "BRANE's prompt guard is our second layer. That is exactly why every request needs a clean BRANE preview."

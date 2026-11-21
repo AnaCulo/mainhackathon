@@ -98,7 +98,7 @@ Policy: [`brane/team-policy.json`](../brane/team-policy.json), applied with `pyt
 | E5 | PASS | **FAIL (leak)** | The spoken phone number was mostly sent: "oh six one two three four`PHONE_REF_1` six seven eight". The spelled-out name was replaced. "dust extraction" was swallowed into a token, which hurts usefulness |
 
 **What this means.** Under policy-v2, routing and refusal work: every local, refuse and allow decision was correct. **Placeholder quality is the weak spot.** Tokens aren't consistent per person, aliases aren't linked, spans are over-swallowed, spoken numbers get through, and names are restored in answers. This is exactly why the backend doesn't rely on BRANE's placeholders:
-- It builds the outbound text from a closed vocabulary with its own case-scoped tokens.
+- It builds the outbound text locally: closed-vocabulary facts with its own case-scoped tokens when the grammar recognises the report, otherwise a locally redacted copy of the free text (names to roles, identifiers withheld).
 - It only releases a request whose preview has **zero** detections.
 
 So BRANE is the second line of defence, not the first. Live backend check on the same policy:
